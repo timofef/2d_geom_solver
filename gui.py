@@ -67,6 +67,16 @@ Fixedlist = []
 EPS = 0.01
 
 
+def submit(expression):
+    """
+    Update the plotted function to the new math *expression*.
+
+    *expression* is a string using "t" as its independent variable, e.g.
+    "t ** 3".
+    """
+    ydata = eval(expression)
+    return ydata
+
 
 def check_time(curtime, mode):
     global CLICK_LAST_TIME, PICK_LAST_TIME
@@ -199,7 +209,7 @@ def assemble_slae(deltas):
 
 # Решение СЛАУ методом Гаусса
 def solve_slae(matrix, f):
-    '''Решение СЛАУ методом Гаусса'''
+    # Решение СЛАУ методом Гаусса
     global ULTRACOUNTER
     alen = len(f)
     flag = 0
@@ -237,7 +247,7 @@ def solve_slae(matrix, f):
                 m += matrix[h][i] * result[i]
             result[h] = (f[h] - m) / matrix[h][h]
         else:
-            #print("Что-то определенно не так, скорее всего - переопределенность, а именно - излишняя фиксация")
+            # print("Что-то определенно не так, скорее всего - переопределенность, а именно - излишняя фиксация")
             ULTRACOUNTER += 1
             if ULTRACOUNTER > 9:
                 flag = 1
@@ -478,6 +488,11 @@ def on_pick(event):
                 if pointInd != -1:
                     tmp.append(global_point_list[pointInd])
                     print("Вторая точка выбрана, введите расстояние")
+                    # axbox1 = fig.add_axes([0.07, 0.63, 0.9, 0.08])
+                    # text_box1 = TextBox(axbox1, '', textalignment="center")
+                    # text_box1.set_val("Введите данные")  # Trigger `submit` with the initial string.
+                    # d = text_box1.on_submit(submit)
+                    # print(d)
                     d = input()
                     flag = 1
                     try:
@@ -755,80 +770,86 @@ def choose_creation_mode(label):
         FLAG_CRE = 2
 
 
-# Обработка нажатия на кнопки ограничений
 def onButtonFpClicked(event):
+    """Обработка нажатия на кнопки ограничений"""
     global FLAG_FIX
 
     if FLAG_FIX == 1:  # Начать заново при повторном клике на кнопку
         FLAG_FIX = 0
     else:
-        print("Выберите точку для фиксации")
+        text_box.set_val("Выберите точку для фиксации")
         reset_flags()
         FLAG_FIX = 1
 
 
-def onButtonDisClicked(event):  # Расстояние
+def onButtonDisClicked(event):
+    """Наложение расстояния"""
     global FLAG_DIS
 
-    if FLAG_DIS == 1 or FLAG_DIS==2:
+    if FLAG_DIS == 1 or FLAG_DIS == 2:
         FLAG_DIS = 0
     else:
-        print("Выберите точки для наложения расстояния")
+        text_box.set_val("Выберите точки для наложения расстояния")
         reset_flags()
         FLAG_DIS = 1
 
 
-def onButtonPolClicked(event):  #точка на линии
+def onButtonPolClicked(event):
+    """Наложение точки на линии"""
     global FLAG_POL
 
-    if FLAG_POL == 1 or FLAG_POL==2:
+    if FLAG_POL == 1 or FLAG_POL == 2:
         FLAG_POL = 0
     else:
-        print("Выберите линию и точку для принадлежности")
+        text_box.set_val("Выберите линию и точку для принадлежности")
         reset_flags()
         FLAG_POL = 1
 
 
-def onButtonConClicked(event):#совпадение точек
+def onButtonConClicked(event):
+    """Наложение совпадения точек"""
     global FLAG_CON
 
-    if FLAG_CON == 1 or FLAG_CON==2:
+    if FLAG_CON == 1 or FLAG_CON == 2:
         FLAG_CON = 0
     else:
-        print("Выберите точки для совпадения")
+        text_box.set_val("Выберите точки для совпадения")
         reset_flags()
         FLAG_CON = 1
 
 
-def onButtonAnClicked(event):#угол
+def onButtonAnClicked(event):
+    """Задание угла"""
     global FLAG_ANG
 
-    if FLAG_ANG == 1 or FLAG_ANG==2:
+    if FLAG_ANG == 1 or FLAG_ANG == 2:
         FLAG_ANG = 0
     else:
-        print("Выберите линии для наложения угла")
+        text_box.set_val("Выберите линии для наложения угла")
         reset_flags()
         FLAG_ANG = 1
 
 
-def onButtonParClicked(event):#параллельность
+def onButtonParClicked(event):
+    """Наложение параллельности"""
     global FLAG_PAR
 
-    if FLAG_PAR == 1 or FLAG_PAR==2:
+    if FLAG_PAR == 1 or FLAG_PAR == 2:
         FLAG_PAR = 0
     else:
-        print("Выберите прямые для параллельности")
+        text_box.set_val("Выберите прямые для параллельности")
         reset_flags()
         FLAG_PAR = 1
 
 
-def onButtonPerClicked(event):#перпендикулярность
+def onButtonPerClicked(event):
+    """Наложение перпендикулярности"""
     global FLAG_PER
 
-    if FLAG_PER == 1 or FLAG_PER==2:
+    if FLAG_PER == 1 or FLAG_PER == 2:
         FLAG_PER = 0
     else:
-        print("Выберите прямые для перпендикулярности")
+        text_box.set_val("Выберите прямые для перпендикулярности")
         reset_flags()
         FLAG_PER = 1
 
@@ -839,7 +860,7 @@ def onButtonVerClicked(event):
     if FLAG_VER == 1:
         FLAG_VER = 0
     else:
-        print("Выберите линию наложения вертикальности")
+        text_box.set_val("Выберите линию наложения вертикальности")
         reset_flags()
         FLAG_VER = 1
 
@@ -850,7 +871,7 @@ def onButtonHorClicked(event):
     if FLAG_HOR == 1:
         FLAG_HOR = 0
     else:
-        print("Выберите линию наложения горизонтальности")
+        text_box.set_val("Выберите линию наложения горизонтальности")
         reset_flags()
         FLAG_HOR = 1
 
@@ -867,8 +888,8 @@ if __name__ == "__main__":
     pylab.tight_layout()
 
     # Размеры окна и место для кнопок
-    fig.set_size_inches(10, 10)
-    fig.subplots_adjust(left=0.07, right=0.8, top=0.95, bottom=0.29)
+    fig.set_size_inches(16, 9)
+    fig.subplots_adjust(left=0.07, right=0.8, top=0.95, bottom=0.15)
 
     # Кнопки для ограничений
     axes_button_fp = pylab.axes([0.81, 0.865, 0.085, 0.085])
@@ -876,65 +897,66 @@ if __name__ == "__main__":
     button_fp = Button(axes_button_fp, None, img_fp)
     button_fp.on_clicked(onButtonFpClicked)
 
-    axes_button_dis = pylab.axes([0.81, 0.77, 0.085, 0.085])
-    img_dis = Image.open("./icons/distance.png")
-    button_dis = Button(axes_button_dis, None, img_dis)
-    button_dis.on_clicked(onButtonDisClicked)
-
-    axes_button_pol = pylab.axes([0.81, 0.675, 0.085, 0.085])
-    img_pol = Image.open("./icons/pointonline.png")
-    button_pol= Button(axes_button_pol, None, img_pol)
-    button_pol.on_clicked(onButtonPolClicked)
-
-    axes_button_con = pylab.axes([0.81, 0.58, 0.085, 0.085])
-    img_con = Image.open("./icons/concidence.png")
-    button_con= Button(axes_button_con, None, img_con)
-    button_con.on_clicked(onButtonConClicked)
-
-    axes_button_an = pylab.axes([0.81, 0.485, 0.085, 0.085])
-    img_an = Image.open("./icons/angle.png")
-    button_an= Button(axes_button_an, None, img_an)
-    button_an.on_clicked(onButtonAnClicked)
-
-    axes_button_par = pylab.axes([0.81, 0.39, 0.085, 0.085])
-    img_par = Image.open("./icons/parallelism.png")
-    button_par = Button(axes_button_par, None, img_par)
-    button_par.on_clicked(onButtonParClicked)
-
-    axes_button_per = pylab.axes([0.81, 0.295, 0.085, 0.085])
-    img_per = Image.open("./icons/perpendicularity.png")
-    button_per = Button(axes_button_per, None, img_per)
-    button_per.on_clicked(onButtonPerClicked)
-
     axes_button_ver = pylab.axes([0.905, 0.865, 0.085, 0.085])
     img_ver = Image.open("./icons/verticality.png")
     button_ver = Button(axes_button_ver, None, img_ver)
     button_ver.on_clicked(onButtonVerClicked)
+
+    axes_button_dis = pylab.axes([0.81, 0.77, 0.085, 0.085])
+    img_dis = Image.open("./icons/distance.png")
+    button_dis = Button(axes_button_dis, None, img_dis)
+    button_dis.on_clicked(onButtonDisClicked)
 
     axes_button_hor = pylab.axes([0.905, 0.77, 0.085, 0.085])
     img_hor = Image.open("./icons/horizontality.png")
     button_hor = Button(axes_button_hor, None, img_hor)
     button_hor.on_clicked(onButtonHorClicked)
 
-    axes_button_del = pylab.axes([0.38, 0.02, 0.17, 0.072])
+    axes_button_pol = pylab.axes([0.905, 0.675, 0.085, 0.085])
+    img_pol = Image.open("./icons/pointonline.png")
+    button_pol= Button(axes_button_pol, None, img_pol)
+    button_pol.on_clicked(onButtonPolClicked)
+
+    axes_button_con = pylab.axes([0.81, 0.675, 0.085, 0.085])
+    img_con = Image.open("./icons/concidence.png")
+    button_con= Button(axes_button_con, None, img_con)
+    button_con.on_clicked(onButtonConClicked)
+
+    axes_button_an = pylab.axes([0.81, 0.58, 0.085, 0.085])
+    img_an = Image.open("./icons/angle.png")
+    button_an= Button(axes_button_an, None, img_an)
+    button_an.on_clicked(onButtonAnClicked)
+
+    axes_button_par = pylab.axes([0.905, 0.58, 0.085, 0.085])
+    img_par = Image.open("./icons/parallelism.png")
+    button_par = Button(axes_button_par, None, img_par)
+    button_par.on_clicked(onButtonParClicked)
+
+    axes_button_per = pylab.axes([0.81, 0.485, 0.085, 0.085])
+    img_per = Image.open("./icons/perpendicularity.png")
+    button_per = Button(axes_button_per, None, img_per)
+    button_per.on_clicked(onButtonPerClicked)
+
+    # Кнопки для добаления примитивов
+    axes_radiobuttons = pylab.axes([0.829, 0.375, 0.14, 0.1])
+    radiobuttons_creationtype = RadioButtons(axes_radiobuttons, ['Точка', 'Прямая', 'Прямая между точек'])
+    radiobuttons_creationtype.on_clicked(choose_creation_mode)
+
+    # 0.39 0.295
+    axes_button_del = pylab.axes([0.829, 0.285, 0.14, 0.08])
     button_del = Button(axes_button_del, 'Удалить примитив', color="white")
     button_del.on_clicked(choose_delete_primitive_mode)
 
-    axes_button_delcon = pylab.axes([0.56, 0.107, 0.24, 0.072])
+    axes_button_delcon = pylab.axes([0.829, 0.195, 0.14, 0.08])
     button_delcon = Button(axes_button_delcon, 'Удалить ограничение', color="white")
     button_delcon.on_clicked(choose_delete_constraint_mode)
-
-    # Кнопки для добаления примитивов
-    pylab.text(-1.6, 1.2, 'Добавить')
-    axes_radiobuttons = pylab.axes([0.05, 0.02, 0.32, 0.16])
-    radiobuttons_creationtype = RadioButtons(axes_radiobuttons, ['Точка', 'Прямая', 'Прямая между точек'])
-    radiobuttons_creationtype.on_clicked(choose_creation_mode)
 
     # Обработчики кликов
     fig.canvas.mpl_connect('button_press_event', on_click)
     fig.canvas.mpl_connect('pick_event', on_pick)
 
-    #axbox = fig.add_axes([0.1, 0.05, 0.8, 0.075])
-    #text_box = TextBox(axbox, "Evaluate", textalignment="center")
+    axbox = fig.add_axes([0.07, 0.03, 0.6, 0.08])
+    text_box = TextBox(axbox, None, textalignment="center")
+    text_box.set_val("Введите данные")  # Trigger `submit` with the initial string.
 
     pylab.show()
