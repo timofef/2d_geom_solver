@@ -6,8 +6,9 @@ class Point(Figure):
 
     def __init__(self, aCoord):
         self.aCoord = aCoord
+
     def v_return(self):
-        return [round(self.aCoord[0],10), round(self.aCoord[1],10)]
+        return [round(self.aCoord[0], 10), round(self.aCoord[1], 10)]
 
     def delPoint(self):
         class_name = self.__class__.__name__

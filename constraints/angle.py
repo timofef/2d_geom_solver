@@ -6,7 +6,7 @@ from constraints.constraint import Constraint
 class Angle(Constraint):
     """Класс угла"""
     def __init__(self, Points, angle):
-        """Constructor"""
+        """Конструктор"""
         self.Points = Points
         self.Ls = 1
         self.Name = "Угол"
@@ -53,14 +53,14 @@ class Angle(Constraint):
         F[0] = -(Del[0][0] + 2*lam*(-A))
         F[1] = -(Del[0][1] + 2*lam*(-B))
 
-        F[2] = -(Del[1][0] + 2*lam*(A))
-        F[3] = -(Del[1][1] + 2*lam*(B))
+        F[2] = -(Del[1][0] + 2*lam*A)
+        F[3] = -(Del[1][1] + 2*lam*B)
 
         F[4] = -(Del[2][0] + 2*lam*(-C))
         F[5] = -(Del[2][1] + 2*lam*(-D))
 
-        F[6] = -(Del[3][0] + 2*lam*(C))
-        F[7] = -(Del[3][1] + 2*lam*(D))
+        F[6] = -(Del[3][0] + 2*lam*C)
+        F[7] = -(Del[3][1] + 2*lam*D)
 
         F[8] = -(a*a*c*c + 2*a*b*c*d + b*b*d*d - (a*a+b*b)*(c*c+d*d)*math.cos(self.u)*math.cos(self.u))
 

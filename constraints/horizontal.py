@@ -18,13 +18,11 @@ class Horizontal(Constraint):
         for i in range(a):
             matrix[i] = [0] * a
 
-
         for i in range(4):
             matrix[i][i] = 1
 
-        matrix[1][4] = matrix[4][1] =-1
+        matrix[1][4] = matrix[4][1] = -1
         matrix[3][4] = matrix[4][3] = 1
-
 
         F = [0] * 5
 

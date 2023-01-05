@@ -47,8 +47,8 @@ class Parallel(Constraint):
         F[3] = -(deltas[1][1] - lam * c)
         F[4] = -(deltas[2][0] + lam * b)
         F[5] = -(deltas[2][1] - lam * a)
-        F[6] =-(deltas[3][0] - lam * b)
-        F[7] =-(deltas[3][1] + lam * a)
+        F[6] = -(deltas[3][0] - lam * b)
+        F[7] = -(deltas[3][1] + lam * a)
 
         F[8] = -(a * d - c * b)
 

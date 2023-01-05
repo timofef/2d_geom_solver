@@ -22,7 +22,7 @@ class Vertical(Constraint):
             matrix[i][i] = 1
 
         matrix[0][4] = matrix[4][0] = -1
-        matrix[2][4] =matrix[4][2] = 1
+        matrix[2][4] = matrix[4][2] = 1
 
         F = [0] * 5
 

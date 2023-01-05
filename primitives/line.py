@@ -11,8 +11,8 @@ class Line(Figure):
         print('Point 1: \n\tX: {}; Y: {};\nPoint 2: \n\tX: {}; Y: {}.'.format(self.oPoint1.aCoord[0], self.oPoint1.aCoord[1], self.oPoint2.aCoord[0], self.oPoint2.aCoord[1]))
 
     def xy_return(self):
-        aXcoord = [round(self.oPoint1.aCoord[0],10), round(self.oPoint2.aCoord[0],10)]
-        aYcoord = [round(self.oPoint1.aCoord[1],10), round(self.oPoint2.aCoord[1],10)]
+        aXcoord = [round(self.oPoint1.aCoord[0], 10), round(self.oPoint2.aCoord[0], 10)]
+        aYcoord = [round(self.oPoint1.aCoord[1], 10), round(self.oPoint2.aCoord[1], 10)]
         return aXcoord, aYcoord
 
     def delLine(self):
