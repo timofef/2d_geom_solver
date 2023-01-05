@@ -19,6 +19,7 @@ import numpy as np
 
 from globals import *
 
+
 # Задержка при нажатиях (для избежания случайных нажатий)
 def check_time(curtime, mode):
     global CLICK_LAST_TIME, PICK_LAST_TIME
@@ -53,9 +54,10 @@ def reset_flags():
     FLAG_PER = 0
 
 
-# Итерации метода Ньютона
+# Перерасчёт координат точек
 def update_primitives():
     global ULTRACOUNTER
+
     if len(Constraints) != 0:
         tmp = 2 * len(global_point_list)
         for con in Constraints:
@@ -64,25 +66,26 @@ def update_primitives():
 
         ULTRACOUNTER = 0
 
+        # Итерации метода Ньютона
         while True:
-            matrix, F = assemble_slae(deltas)
-            Adders, flag = solve_slae(matrix, F)
+            matrix, f = assemble_slae(deltas)
+            new_deltas, flag = solve_slae(matrix, f)
             if flag:
                 message_box.set_val('Не могу пересчитать, отменяюсь')
                 # print("Не могу пересчитать, отменяюсь")
                 return 1
-            if abs(max(Adders, key=abs)) < EPS:
+            if abs(max(new_deltas, key=abs)) < EPS:
                 for i in range(len(global_point_list)):
                     global_point_list[i].aCoord[0] += deltas[i * 2]
                     global_point_list[i].aCoord[1] += deltas[i * 2 + 1]
                 break
 
             for i in range(len(deltas)):
-                deltas[i] += Adders[i]
+                deltas[i] += new_deltas[i]
     return 0
 
 
-#  Формирование матрицы системы
+#  Ансамблирование
 def assemble_slae(deltas):
     d_len = len(deltas)
     matrix = [0] * d_len
@@ -91,60 +94,68 @@ def assemble_slae(deltas):
     f = [0] * d_len
 
     # Заносим координаты всех точек в список
-    coordinates = []
+    delta_coordinates = []
     total_coordinates = 2 * len(global_point_list)
     for i in range(0, total_coordinates, 2):
-        coordinates.append([deltas[i], deltas[i + 1]])
+        delta_coordinates.append([deltas[i], deltas[i + 1]])
 
     # Формируем список лямбд для всех имеющихся ограничений
-    lamdas = []
+    delta_lamdas = []
     for con in Constraints:
         tmp = [0] * con.getLs()
         for i in range(con.getLs()):
             tmp[i] = deltas[total_coordinates]
             total_coordinates += 1
-        lamdas.append(tmp)
+        delta_lamdas.append(tmp)
 
     lamda_shift = 0
     for con in Constraints:
         if con.Ls != 0:
-            D = []
-            L = lamdas[Constraints.index(con)]
-            T = []  # Координаты в глобальной матрице
+            D = []  # Дельты для перерасчёта локальных матриц
+            L = delta_lamdas[Constraints.index(con)]
+            T = []  # Индекс в глобальной матрице
 
+            # Получение дельт для точек, задействованных в данном ограничении
             for cp in con.Points:
-                for gp in global_point_list:
-                    if cp == gp:
-                        D.append(coordinates[global_point_list.index(gp)])
-                        T.append(2 * global_point_list.index(gp))
-                        T.append(2 * global_point_list.index(gp) + 1)
-                        break
+                # for gp in global_point_list:
+                #     if cp == gp:
+                #         point_index = global_point_list.index(gp)
+                #         D.append(delta_coordinates[point_index])
+                #         T.append(2 * point_index)
+                #         T.append(2 * point_index + 1)
+                #         break
+                point_index = global_point_list.index(cp)
+                D.append(delta_coordinates[point_index])
+                T.append(2 * point_index)
+                T.append(2 * point_index + 1)
+            # Получение дельт лямбда для данного ограничения и сдвига в индексах
+            # глобального вектора дельт для них
             for i in range(len(L)):
                 T.append(2 * len(global_point_list) + lamda_shift + i)
-            l_matrix, l_F = con.LocalCon(D, L)
             lamda_shift += len(L)
+
+            # Получение локальной матрицы для данного ограничения
+            local_matrix, local_f = con.LocalCon(D, L)
 
             # Ансамблирование
             for i in range(len(T)):
                 for j in range(len(T)):
-                    matrix[T[i]][T[j]] += l_matrix[i][j]
-                f[T[i]] += l_F[i]
-    
-    for i in range(2 * len(global_point_list)):  # для точек, не попавших в ограничения
+                    matrix[T[i]][T[j]] += local_matrix[i][j]
+                f[T[i]] += local_f[i]
+
+    # Точки без ограничений
+    for i in range(2 * len(global_point_list)):
         if matrix[i][i] == 0 and f[i] == 0:
             matrix[i][i] = 1
 
+    # Учёт фиксированных точек
     for i in range(len(global_point_list)):
         if global_point_list[i] in Fixedlist:
             for j in range(len(deltas)):
-                matrix[i*2][j] = 0
-                matrix[i*2 + 1][j] = 0
-                matrix[j][i*2] = 0
-                matrix[j][i*2 + 1] = 0
-            matrix[i*2][i*2] = 1
-            matrix[i*2 + 1][i*2 + 1] = 1
-            f[i*2] = 0
-            f[i*2 + 1] = 0
+                matrix[i*2][j] = matrix[j][i*2] = 0
+                matrix[i*2 + 1][j] = matrix[j][i*2 + 1] = 0
+            matrix[i*2][i*2] = matrix[i*2 + 1][i*2 + 1] = 1
+            f[i*2] = f[i*2 + 1] = 0
 
     return matrix, f
 
@@ -152,8 +163,12 @@ def assemble_slae(deltas):
 # Решение СЛАУ методом Гаусса
 def solve_slae(matrix, f):
     global ULTRACOUNTER
+
+    # Размерность системы
     alen = len(f)
     flag = 0
+
+    # Прямой ход
     for h in range(alen - 1):
         for j in range(h + 1, alen):
             if matrix[j][h] != 0:
@@ -181,6 +196,7 @@ def solve_slae(matrix, f):
     if -0.001 < matrix[alen - 1][alen - 1] < 0.001:
         return result, flag
 
+    # Обратный ход
     for h in range(alen - 1, -1, -1):
         m = 0
         if not(-0.001 < matrix[h][h] < 0.001):
@@ -227,7 +243,7 @@ def update_draft():
         x, y = oLine.xy_return()
         graph_axes.plot(x, y, marker='o', picker=True, pickradius=5)
 
-    graph_axes.plot(aX, aY, 'o', color='red', picker=True, pickradius=5, zorder=2.5)
+    graph_axes.plot(aX, aY, 'o', color='black', picker=True, pickradius=5, zorder=2.5)
     graph_axes.grid()
     pylab.draw()
 
@@ -586,6 +602,7 @@ def add_line(p1, p2):
     update_draft()
 
 
+# TODO
 # Удаление примитивов
 def delete_point(point_to_delete):
     # Удаление точки
@@ -615,6 +632,7 @@ def delete_point(point_to_delete):
     update_draft()
 
 
+# TODO
 def delete_line(line_to_delete):
     global global_point_list, global_line_list
     
@@ -829,48 +847,48 @@ if __name__ == "__main__":
 
     # Кнопки для ограничений для точек
     axes_button_fp = pylab.axes([0.8, 0.865, 0.09, 0.09])
-    img_fp = Image.open("./icons/fixpoint.png")
+    img_fp = Image.open("./img/fix.png")
     button_fp = Button(axes_button_fp, None, img_fp)
     button_fp.on_clicked(onButtonFpClicked)
 
     axes_button_dis = pylab.axes([0.88, 0.865, 0.09, 0.09])
-    img_dis = Image.open("./icons/distance.png")
+    img_dis = Image.open("./img/distance.png")
     button_dis = Button(axes_button_dis, None, img_dis)
     button_dis.on_clicked(onButtonDisClicked)
 
     axes_button_con = pylab.axes([0.8, 0.77, 0.09, 0.09])
-    img_con = Image.open("./icons/concidence.png")
+    img_con = Image.open("./img/coincidence.png")
     button_con = Button(axes_button_con, None, img_con)
     button_con.on_clicked(onButtonConClicked)
 
     axes_button_pol = pylab.axes([0.88, 0.77, 0.09, 0.09])
-    img_pol = Image.open("./icons/pointonline.png")
+    img_pol = Image.open("./img/point_on_line.png")
     button_pol = Button(axes_button_pol, None, img_pol)
     button_pol.on_clicked(onButtonPolClicked)
 
     # Кнопки ограничений для отрезков
     axes_button_par = pylab.axes([0.8, 0.65, 0.09, 0.09])
-    img_par = Image.open("./icons/parallelism.png")
+    img_par = Image.open("./img/parallel.png")
     button_par = Button(axes_button_par, None, img_par)
     button_par.on_clicked(onButtonParClicked)
 
     axes_button_per = pylab.axes([0.88, 0.65, 0.09, 0.09])
-    img_per = Image.open("./icons/perpendicularity.png")
+    img_per = Image.open("./img/perpendicular.png")
     button_per = Button(axes_button_per, None, img_per)
     button_per.on_clicked(onButtonPerClicked)
 
     axes_button_ver = pylab.axes([0.8, 0.555, 0.09, 0.09])
-    img_ver = Image.open("./icons/verticality.png")
+    img_ver = Image.open("./img/vertical.png")
     button_ver = Button(axes_button_ver, None, img_ver)
     button_ver.on_clicked(onButtonVerClicked)
 
     axes_button_hor = pylab.axes([0.88, 0.555, 0.09, 0.09])
-    img_hor = Image.open("./icons/horizontality.png")
+    img_hor = Image.open("./img/horizontal.png")
     button_hor = Button(axes_button_hor, None, img_hor)
     button_hor.on_clicked(onButtonHorClicked)
 
     axes_button_an = pylab.axes([0.8, 0.46, 0.09, 0.09])
-    img_an = Image.open("./icons/angle.png")
+    img_an = Image.open("./img/angle.png")
     button_an= Button(axes_button_an, None, img_an)
     button_an.on_clicked(onButtonAnClicked)
 

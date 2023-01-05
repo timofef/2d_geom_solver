@@ -14,18 +14,18 @@ class Fixed(Constraint):
     def get_description(self):
         return "Фиксация точки " + str(self.Points[0].v_return())
 
-    '''def LocalCon(self,D,L):
-        a=2
-        matrix=[0]*a
-        for i in range(a):
-            matrix[i]=[0]*a
-        
-        F=[0]*a
-
-        F[0]=0
-        F[1]=0
-
-        return(matrix, F)'''
+    # def LocalCon(self, D, L):
+    #     k = 2
+    #     matrix = [0] * k
+    #     for i in range(k):
+    #         matrix[i] = [0] * k
+    #
+    #     F = [0] * k
+    #
+    #     F[0] = 0
+    #     F[1] = 0
+    #
+    #     return matrix, F
 
     def delConstrain(self):
         self.Flist.remove(self.Points[0])
