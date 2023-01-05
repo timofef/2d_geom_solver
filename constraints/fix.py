@@ -11,6 +11,9 @@ class Fixed(Constraint):
         Fixedlist.append(Points[0])
         self.Flist = Fixedlist
 
+    def get_description(self):
+        return "Фиксация точки " + str(self.Points[0].v_return())
+
     '''def LocalCon(self,D,L):
         a=2
         matrix=[0]*a

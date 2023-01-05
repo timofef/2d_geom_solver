@@ -9,6 +9,9 @@ class PointOnLine(Constraint):
         self.Ls = 1
         self.Name = "Точка на прямой"
 
+    def get_description(self):
+        return "Точка " + str(self.Points[2].v_return()) + " на прямой {" + str(self.Points[0].v_return()) + "; " + str(self.Points[1].v_return()) + "}"
+
     def LocalCon(self, deltas, lambdas):
         k = 7
         matrix = [0] * k
@@ -22,28 +25,15 @@ class PointOnLine(Constraint):
 
         lam = lambdas[0]
 
-        # matrix[0][0] = 1
-        # matrix[1][1] = 1
-        # matrix[2][2] = 1
-        # matrix[3][3] = 1
-        # matrix[4][4] = 1
-        # matrix[5][5] = 1
         for i in range(6):
             matrix[i][i] = 1
 
-        matrix[6][0] = -d
-        matrix[6][1] = c
-        matrix[6][2] = -b
-        matrix[6][3] = a
-        matrix[6][4] = b + d
-        matrix[6][5] = -a - c
-
-        matrix[0][6] = -d
-        matrix[1][6] = c
-        matrix[2][6] = -b
-        matrix[3][6] = a
-        matrix[4][6] = b + d
-        matrix[5][6] = -a - c
+        matrix[6][0] = matrix[0][6] = -d
+        matrix[6][1] = matrix[1][6] = c
+        matrix[6][2] = matrix[2][6] = -b
+        matrix[6][3] = matrix[3][6] = a
+        matrix[6][4] = matrix[4][6] = b + d
+        matrix[6][5] = matrix[5][6] = -a - c
 
         F = [0] * k
 

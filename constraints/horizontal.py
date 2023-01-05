@@ -9,6 +9,9 @@ class Horizontal(Constraint):
         self.Ls = 1
         self.Name = "Горизонтальность"
 
+    def get_description(self):
+        return "Горизонтальность отрезка {" + str(self.Points[0].v_return()) + "; " + str(self.Points[1].v_return()) + "}"
+
     def LocalCon(self, D, L):
         a = 5
         matrix = [0] * a
@@ -16,16 +19,11 @@ class Horizontal(Constraint):
             matrix[i] = [0] * a
 
 
-        matrix[0][0] = 1
-        matrix[1][1] = 1
-        matrix[2][2] = 1
-        matrix[3][3] = 1
+        for i in range(4):
+            matrix[i][i] = 1
 
-        matrix[1][4] = -1
-        matrix[3][4] = 1
-        matrix[4][1] = -1
-        matrix[4][3] = 1
-
+        matrix[1][4] = matrix[4][1] =-1
+        matrix[3][4] = matrix[4][3] = 1
 
 
         F = [0] * 5

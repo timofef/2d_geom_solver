@@ -1,4 +1,3 @@
-import sys
 import pylab
 from matplotlib.widgets import Button
 from matplotlib.widgets import RadioButtons
@@ -13,71 +12,14 @@ import constraints.parallel
 import constraints.perpendicular
 import constraints.pointOnLine
 import constraints.vertical
-import objects.line
-import objects.point
-from objects import classes
-from constraints import constraint
+import primitives.line
+import primitives.point
 from PIL import Image
 import numpy as np
 
+from globals import *
 
-from datetime import datetime
-
-CLICK_LAST_TIME = datetime.now()
-PICK_LAST_TIME = datetime.now()
-
-
-tmp = []
-
-ULTRACOUNTER = 0
-
-
-# Флаги текущего режима
-FLAG_HOR = 0  # Задание горизонтальности
-FLAG_VER = 0  # Задание вертикальности
-FLAG_FIX = 0  # Фиксация точки
-FLAG_DIS = 0  # Расстояние
-FLAG_POL = 0  #
-FLAG_CON = 0  # Задание совпадения точек
-FLAG_ANG  = 0  # Задание угла
-FLAG_PAR = 0  # Задание параллельности
-FLAG_PER = 0  # Задание перпендикулярности
-
-
-# Флаги режимов создания/удаления примитивов
-FLAG_DEL = 0 # флаг для удаления точки
-FLAG_CRE = 0 # флаг создания 0 - точка, 1 - прямая, 2 - прямая между существующими точками
-
-PointCount = 0
-PointInd = 0
-
-cPointlist = []
-
-global_point_list = []  # список точек
-global_line_list = []  # список отрезков
-
-XAXES = []  # размер рабочего поля по Х
-YAXES = []  # размер рабочего поля по У
-
-FLAG_DELCON = 0
-
-Constraints = []
-Fixedlist = []
-
-EPS = 0.01
-
-
-def submit(expression):
-    """
-    Update the plotted function to the new math *expression*.
-
-    *expression* is a string using "t" as its independent variable, e.g.
-    "t ** 3".
-    """
-    ydata = eval(expression)
-    return ydata
-
-
+# Задержка при нажатиях (для избежания мискликов)
 def check_time(curtime, mode):
     global CLICK_LAST_TIME, PICK_LAST_TIME
     if mode == 0: # Режим просто для клика
@@ -100,7 +42,8 @@ def check_time(curtime, mode):
 
 # Сброс флагов режима
 def reset_flags():
-    global FLAG_HOR, FLAG_VER, FLAG_FIX, FLAG_DIS, FLAG_POL, FLAG_CON, FLAG_ANG, FLAG_PAR, FLAG_PER
+    global FLAG_HOR, FLAG_VER, FLAG_FIX, FLAG_DIS, \
+        FLAG_POL, FLAG_CON, FLAG_ANG, FLAG_PAR, FLAG_PER
     FLAG_HOR = 0
     FLAG_VER = 0
     FLAG_FIX = 0
@@ -113,13 +56,13 @@ def reset_flags():
 
 
 # Итерации метода Ньютона
-def Redoer():
+def update_primitives():
     global ULTRACOUNTER
     if len(Constraints) != 0:
         tmp = 2 * len(global_point_list)
         for con in Constraints:
             tmp += con.getLs()
-        deltas = [0] * tmp  #starting deltas
+        deltas = [0] * tmp
 
         ULTRACOUNTER = 0
 
@@ -209,7 +152,7 @@ def assemble_slae(deltas):
 
 # Решение СЛАУ методом Гаусса
 def solve_slae(matrix, f):
-    # Решение СЛАУ методом Гаусса
+    '''Решение СЛАУ методом Гаусса'''
     global ULTRACOUNTER
     alen = len(f)
     flag = 0
@@ -247,7 +190,7 @@ def solve_slae(matrix, f):
                 m += matrix[h][i] * result[i]
             result[h] = (f[h] - m) / matrix[h][h]
         else:
-            # print("Что-то определенно не так, скорее всего - переопределенность, а именно - излишняя фиксация")
+            #print("Что-то определенно не так, скорее всего - переопределенность, а именно - излишняя фиксация")
             ULTRACOUNTER += 1
             if ULTRACOUNTER > 9:
                 flag = 1
@@ -256,13 +199,21 @@ def solve_slae(matrix, f):
 
 
 # Отрисовка эскиза
-def draw_plot(): # Перерисовка поля graph_axes
+def update_draft():
     global global_point_list, global_line_list, cPointlist
 
     cPointlist = []
     cPointlist = global_point_list.copy()
-    if Redoer():
+    if update_primitives():
         global_point_list = cPointlist.copy()
+
+    if len(Constraints) != 0:
+        print('-'*45)
+        print("Наложенные граничения:")
+        i = 0
+        for con in Constraints:
+            print(str(i) + ": " + con.get_description())
+            i += 1
 
     aX = []
     aY = []
@@ -337,8 +288,9 @@ def on_pick(event):
                         tmp = [oLine.oPoint1, oLine.oPoint2]
                         tmp2= constraints.horizontal.Horizontal(tmp)
                         Constraints.append(tmp2)
-                        draw_plot()
+                        update_draft()
                         FLAG_HOR = 0
+                        message_box.set_val('Ограничение наложено')
 
             if FLAG_VER: # вертикальность
                 for oLine in global_line_list:
@@ -346,8 +298,9 @@ def on_pick(event):
                         tmp = [oLine.oPoint1, oLine.oPoint2]
                         tmp2= constraints.vertical.Vertical(tmp)
                         Constraints.append(tmp2)
-                        draw_plot()
+                        update_draft()
                         FLAG_VER = 0
+                        message_box.set_val('Ограничение наложено')
             
 
             if FLAG_PAR == 2:  # параллельность
@@ -357,13 +310,15 @@ def on_pick(event):
                         tmp.append(oLine.oPoint2)
                         tmp2 = constraints.parallel.Parallel(tmp)
                         Constraints.append(tmp2)
-                        draw_plot()
+                        update_draft()
                         FLAG_PAR = 0
+                        message_box.set_val('Ограничение наложено')
             if FLAG_PAR == 1:
                 for oLine in global_line_list:
                     if get_line_by_coord(oLine, xdata, ydata):
                         tmp = [oLine.oPoint1, oLine.oPoint2]
-                        print("Первая линия выбрана, ждем вторую")
+                        #print("Первая линия выбрана, ждем вторую")
+                        message_box.set_val('Параллельность. Выберите второй отрезок')
                         FLAG_PAR = 2
 
             
@@ -374,20 +329,23 @@ def on_pick(event):
                         tmp.append(oLine.oPoint2)
                         tmp2 = constraints.perpendicular.Perpendicular(tmp)
                         Constraints.append(tmp2)
-                        draw_plot()
+                        update_draft()
                         FLAG_PER = 0
+                        message_box.set_val('Ограничение наложено')
             if FLAG_PER == 1:
                 for oLine in global_line_list:
                     if get_line_by_coord(oLine, xdata, ydata):
                         tmp = [oLine.oPoint1, oLine.oPoint2]
-                        print("Первая линия выбрана, ждем вторую")
+                        #print("Первая линия выбрана, ждем вторую")
+                        message_box.set_val('Перпендикулярность. Выберите второй отрезок')
                         FLAG_PER = 2
 
             if FLAG_POL == 1: # точка на линии
                 for oLine in global_line_list:
                     if get_line_by_coord(oLine, xdata, ydata):
                         tmp = [oLine.oPoint1, oLine.oPoint2]
-                        print("Линия выбрана, теперь точка")
+                        #print("Линия выбрана, теперь точка")
+                        message_box.set_val('Точка на прямой. Выберите точку')
                         FLAG_POL = 2
 
             if FLAG_ANG == 2:  # угол, выбор второго отрезка и задание угла
@@ -395,7 +353,9 @@ def on_pick(event):
                     if get_line_by_coord(oLine, xdata, ydata):
                         tmp.append(oLine.oPoint1)
                         tmp.append(oLine.oPoint2)
-                        print("Отлично, теперь угол")
+                        #print("Отлично, теперь угол")
+                        message_box.set_val('Угол. Введите значение в терминале (градусы)')
+                        print('Введите угол: ')
                         u = input()
                         flag = 1
                         try:
@@ -405,8 +365,9 @@ def on_pick(event):
                         if flag:
                             tmp2 = constraints.angle.Angle(tmp, u)
                             Constraints.append(tmp2)
-                            draw_plot()
+                            update_draft()
                             FLAG_ANG = 0
+                            message_box.set_val('Ограничение наложено')
                         else:
                             print("Плохо введен угол, отменяемся")
                             FLAG_ANG = 0
@@ -414,7 +375,8 @@ def on_pick(event):
                 for oLine in global_line_list:
                     if get_line_by_coord(oLine, xdata, ydata):
                         tmp = [oLine.oPoint1, oLine.oPoint2]
-                        print("Первая линия выбрана, ждем вторую")
+                        #print("Первая линия выбрана, ждем вторую")
+                        message_box.set_val('Угол. Выберите второй отрезок')
                         FLAG_ANG = 2
         # Если кликнули на точку
         else:
@@ -470,8 +432,9 @@ def on_pick(event):
                     tmp = [global_point_list[pointInd]]
                     tmp2 = constraints.fix.Fixed(tmp, Fixedlist)
                     Constraints.append(tmp2)
-                    draw_plot()
-                    print("Точка зафиксирована")
+                    update_draft()
+                    # print("Точка зафиксирована")
+                    message_box.set_val('Точка зафиксирована')
                     FLAG_FIX = 0
                     pointInd = -1
                 else:
@@ -480,19 +443,17 @@ def on_pick(event):
                             tmp = [oPoint]
                             tmp2 = constraints.fix.Fixed(tmp, Fixedlist)
                             Constraints.append(tmp2)
-                            draw_plot()
-                            print("Точка зафиксирована")
+                            update_draft()
+                            #print("Точка зафиксирована")
+                            message_box.set_val('Точка зафиксирована')
                             FLAG_FIX = 0
             
             if FLAG_DIS == 2:
                 if pointInd != -1:
                     tmp.append(global_point_list[pointInd])
-                    print("Вторая точка выбрана, введите расстояние")
-                    # axbox1 = fig.add_axes([0.07, 0.63, 0.9, 0.08])
-                    # text_box1 = TextBox(axbox1, '', textalignment="center")
-                    # text_box1.set_val("Введите данные")  # Trigger `submit` with the initial string.
-                    # d = text_box1.on_submit(submit)
-                    # print(d)
+                    #print("Расстояние. Введите расстояние в терминале")
+                    message_box.set_val('Расстояние. Введите расстояние в терминале')
+                    print('Введите расстояние: ')
                     d = input()
                     flag = 1
                     try:
@@ -502,9 +463,10 @@ def on_pick(event):
                     if flag:
                         tmp2= constraints.distance.Distance(tmp, d)
                         Constraints.append(tmp2)
-                        draw_plot()
+                        update_draft()
                         pointInd = -1
                         FLAG_DIS = 0
+                        message_box.set_val('Ограничение наложено')
                     else:
                         print("Плохо введено расстояние, отменяемся")
                         pointInd = -1
@@ -513,7 +475,9 @@ def on_pick(event):
                     for oPoint in global_point_list:
                         if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
                             tmp.append(oPoint)
-                            print("Вторая точка выбрана, введите расстояние")
+                            # print("Расстояние. Введите расстояние в терминале")
+                            message_box.set_val('Расстояние. Введите расстояние в терминале')
+                            print('Введите расстояние: ')
                             d = input()
                             flag=1
 
@@ -525,17 +489,17 @@ def on_pick(event):
                             if flag:
                                 tmp2 = constraints.distance.Distance(tmp, d)
                                 Constraints.append(tmp2)
-                                draw_plot()
+                                update_draft()
                                 FLAG_DIS = 0
                             else:
                                 print("Плохо введено расстояние, отменяемся")
                                 FLAG_DIS = 0
-
             if FLAG_DIS == 1:
                 if pointInd != -1:
                     tmp = []
                     tmp.append(global_point_list[pointInd])
-                    print("Первая точка выбрана, ждем вторую")
+                    #print("Первая точка выбрана, ждем вторую")
+                    message_box.set_val('Расстояние. Выберите вторую точку')
                     FLAG_DIS = 2
                     pointInd = -1
                 else:
@@ -543,7 +507,8 @@ def on_pick(event):
                         if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
                             tmp = []
                             tmp.append(oPoint)
-                            print("Первая точка выбрана, ждем вторую")
+                            # print("Первая точка выбрана, ждем вторую")
+                            message_box.set_val('Расстояние. Выберите вторую точку')
                             FLAG_DIS = 2
             
 
@@ -553,9 +518,10 @@ def on_pick(event):
                     #print("Вторая точка выбрана, введите расстояние")
                     tmp2= constraints.coincidence.Coincidence(tmp)
                     Constraints.append(tmp2)
-                    draw_plot()
+                    update_draft()
                     FLAG_CON = 0
                     pointInd = -1
+                    message_box.set_val('Ограничение наложено')
                 else:
                     for oPoint in global_point_list:
                         if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
@@ -563,15 +529,15 @@ def on_pick(event):
                             #print("Вторая точка выбрана, введите расстояние")
                             tmp2= constraints.coincidence.Coincidence(tmp)
                             Constraints.append(tmp2)
-                            draw_plot()
+                            update_draft()
                             FLAG_CON = 0
-
-
+                            message_box.set_val('Ограничение наложено')
             if FLAG_CON == 1:
                 if pointInd != -1:
                     tmp = []
                     tmp.append(global_point_list[pointInd])
-                    print("Первая точка выбрана, ждем вторую")
+                    # print("Первая точка выбрана, ждем вторую")
+                    message_box.set_val('Совпадение точек. Выберите вторую точку')
                     FLAG_CON = 2
                     pointInd = -1
                 else:
@@ -579,7 +545,8 @@ def on_pick(event):
                         if oPoint.v_return() == [round(points[0][0],10),round(points[0][1],10)]:
                             tmp = []
                             tmp.append(oPoint)
-                            print("Первая точка выбрана, ждем вторую")
+                            # print("Первая точка выбрана, ждем вторую")
+                            message_box.set_val('Совпадение точек. Выберите вторую точку')
                             FLAG_CON = 2
 
 
@@ -589,7 +556,7 @@ def on_pick(event):
                     #print("Вторая точка выбрана, введите расстояние")
                     tmp2= constraints.pointOnLine.PointOnLine(tmp)
                     Constraints.append(tmp2)
-                    draw_plot()
+                    update_draft()
                     FLAG_POL = 0
                     pointInd = -1
                 else:
@@ -599,7 +566,7 @@ def on_pick(event):
                             #print("Вторая точка выбрана, введите расстояние")
                             tmp2 = constraints.pointOnLine.PointOnLine(tmp)
                             Constraints.append(tmp2)
-                            draw_plot()
+                            update_draft()
                             FLAG_POL = 0
 
 
@@ -614,55 +581,53 @@ def get_line_by_coord(line, x, y):
 def add_point(event):
     '''Добавление новой точки'''
     global global_point_list
-    new_point = objects.point.Point([event.xdata, event.ydata])
+    new_point = primitives.point.Point([event.xdata, event.ydata])
     global_point_list.append(new_point)
-    draw_plot()
+    update_draft()
 
 
 def add_line(p1, p2):
     '''Добавление нового отрезка'''
     global global_line_list
-    new_line = objects.line.Line(p1, p2)
+    new_line = primitives.line.Line(p1, p2)
     global_line_list.append(new_line)
-    draw_plot()
+    update_draft()
 
 
 # Удаление примитивов
-def delete_point(oPoint):
+def delete_point(point_to_delete):
     '''Удаление точки'''
     global global_point_list, global_line_list
     # Если к точке привязаны прямые, то они тоже стираются
     aLinelist_copy = []
     for oLine in global_line_list:
         print(oLine.xy_return())
-        if oPoint == oLine.oPoint1 or oPoint == oLine.oPoint2:
+        if point_to_delete == oLine.oPoint1 or point_to_delete == oLine.oPoint2:
             aLinelist_copy.append(oLine)
     for oLine1 in aLinelist_copy:
         global_line_list.remove(oLine1)
         oLine1.delLine()
 
-    # конец блока удаления связанных прямых
-
     while True:
         ttt = 0
         for con in Constraints:
-            if oPoint in con.Points:
+            if point_to_delete in con.Points:
                 ttt = 1
                 Constraints.remove(con)
         if ttt == 0:
             break
     print(len(Constraints))
 
-    global_point_list.remove(oPoint)
-    oPoint.delPoint()
-    draw_plot()
+    global_point_list.remove(point_to_delete)
+    point_to_delete.delPoint()
+    update_draft()
 
 
-def delete_line(oLine):
+def delete_line(line_to_delete):
     global global_point_list, global_line_list
     
-    oPoint1 = global_point_list[global_point_list.index(oLine.oPoint1)]
-    oPoint2 = global_point_list[global_point_list.index(oLine.oPoint2)]
+    oPoint1 = global_point_list[global_point_list.index(line_to_delete.oPoint1)]
+    oPoint2 = global_point_list[global_point_list.index(line_to_delete.oPoint2)]
     iP1cnt = -1
     iP2cnt = -1
     for oLine_ in global_line_list: # Считаем кол-во точек из Линии в списке линий
@@ -670,8 +635,8 @@ def delete_line(oLine):
             iP1cnt +=1
         if oPoint2 == oLine_.oPoint1 or oPoint2 == oLine_.oPoint2:
             iP2cnt += 1
-    global_line_list.remove(oLine)
-    oLine.delLine()
+    global_line_list.remove(line_to_delete)
+    line_to_delete.delLine()
     # Если точка Линии больше нигде не используется, то её стираем, иначе не трогаем
     if not iP1cnt:
         while True:
@@ -682,7 +647,7 @@ def delete_line(oLine):
                     Constraints.remove(con)
             if ttt == 0:
                 break
-        print(len(Constraints))
+        #print(len(Constraints))
 
         global_point_list.remove(oPoint1)
         oPoint1.delPoint()
@@ -695,11 +660,11 @@ def delete_line(oLine):
                     Constraints.remove(con)
             if ttt == 0:
                 break
-        print(len(Constraints))
+        #print(len(Constraints))
 
         global_point_list.remove(oPoint2)
         oPoint2.delPoint()
-    draw_plot()
+    update_draft()
 
 
 # Переключение режимов создания/удаления примитивов
@@ -724,15 +689,16 @@ def choose_delete_constraint_mode(event):
         if len(Constraints) != 0:
             FLAG_DELCON = 1
             button_delcon.color = 'grey'
-            print("Список ограничений:")
-            i = 0
-            for con in Constraints:
-                tmp = []
-                for point in con.Points:
-                    tmp.append(point.v_return())
-                print(i, ":", con.Name, "между точками:", tmp)
-                i += 1
-            print("Ожидаю, какое по номеру ограничение удалить")
+            # print("Список ограничений:")
+            # i = 0
+            # for con in Constraints:
+            #     tmp = []
+            #     for point in con.Points:
+            #         tmp.append(point.v_return())
+            #     print(i, ":", con.Name, "между точками:", tmp)
+            #     i += 1
+            message_box.set_val('Укажите в терминале номер ограничения для удаления')
+            print("Номер ограничения для удаления:")
             flag = 1
             todel = input()
             try:
@@ -745,14 +711,14 @@ def choose_delete_constraint_mode(event):
                     Constraints.remove(Constraints[todel])
                 except:
                     print("Ограничения с таким индексом нет")
-                print("Новый список ограничений:")
-                i = 0
-                for con in Constraints:
-                    tmp = []
-                    for point in con.Points:
-                        tmp.append(point.v_return())
-                    print(i,":",con.Name,"между точками:",tmp)
-                    i += 1
+                # print("Новый список ограничений:")
+                # i = 0
+                # for con in Constraints:
+                #     tmp = []
+                #     for point in con.Points:
+                #         tmp.append(point.v_return())
+                #     print(i,":",con.Name,"между точками:",tmp)
+                #     i += 1
             FLAG_DELCON = 0
             button_delcon.color = 'white'
         else:
@@ -764,103 +730,105 @@ def choose_creation_mode(label):
     global FLAG_CRE
     if radiobuttons_creationtype.value_selected == 'Точка':
         FLAG_CRE = 0
-    elif radiobuttons_creationtype.value_selected == 'Прямая':
+    elif radiobuttons_creationtype.value_selected == 'Отрезок':
         FLAG_CRE = 1
     else:
         FLAG_CRE = 2
 
 
+# Обработка нажатия на кнопки ограничений
 def onButtonFpClicked(event):
-    """Обработка нажатия на кнопки ограничений"""
     global FLAG_FIX
 
     if FLAG_FIX == 1:  # Начать заново при повторном клике на кнопку
         FLAG_FIX = 0
     else:
-        text_box.set_val("Выберите точку для фиксации")
+        # print("Выберите точку для фиксации")
+        message_box.set_val("Фиксация. Выберите точку")
         reset_flags()
         FLAG_FIX = 1
 
 
-def onButtonDisClicked(event):
-    """Наложение расстояния"""
+def onButtonDisClicked(event):  # Расстояние
     global FLAG_DIS
 
-    if FLAG_DIS == 1 or FLAG_DIS == 2:
+    if FLAG_DIS == 1 or FLAG_DIS==2:
         FLAG_DIS = 0
     else:
-        text_box.set_val("Выберите точки для наложения расстояния")
+        #print("Выберите точки для наложения расстояния")
+        message_box.set_val('Расстояние. Выберите первую точку')
         reset_flags()
         FLAG_DIS = 1
 
 
-def onButtonPolClicked(event):
-    """Наложение точки на линии"""
+def onButtonPolClicked(event):  #точка на линии
     global FLAG_POL
 
-    if FLAG_POL == 1 or FLAG_POL == 2:
+    if FLAG_POL == 1 or FLAG_POL==2:
         FLAG_POL = 0
     else:
-        text_box.set_val("Выберите линию и точку для принадлежности")
+        #print("Выберите линию и точку для принадлежности")
+        message_box.set_val('Точка на прямой. Выберите отрезок, задающий прямую')
         reset_flags()
         FLAG_POL = 1
 
 
-def onButtonConClicked(event):
-    """Наложение совпадения точек"""
+def onButtonConClicked(event):#совпадение точек
     global FLAG_CON
 
-    if FLAG_CON == 1 or FLAG_CON == 2:
+    if FLAG_CON == 1 or FLAG_CON==2:
         FLAG_CON = 0
     else:
-        text_box.set_val("Выберите точки для совпадения")
+        # print("Выберите точки для совпадения")
+        message_box.set_val('Совпадение точек. Выберите первую точку')
         reset_flags()
         FLAG_CON = 1
 
 
-def onButtonAnClicked(event):
-    """Задание угла"""
+def onButtonAnClicked(event):#угол
     global FLAG_ANG
 
-    if FLAG_ANG == 1 or FLAG_ANG == 2:
+    if FLAG_ANG == 1 or FLAG_ANG==2:
         FLAG_ANG = 0
     else:
-        text_box.set_val("Выберите линии для наложения угла")
+        #print("Выберите линии для наложения угла")
+        message_box.set_val('Угол. Выберите первый отрезок')
         reset_flags()
         FLAG_ANG = 1
 
 
-def onButtonParClicked(event):
-    """Наложение параллельности"""
+def onButtonParClicked(event):#параллельность
     global FLAG_PAR
 
-    if FLAG_PAR == 1 or FLAG_PAR == 2:
+    if FLAG_PAR == 1 or FLAG_PAR==2:
         FLAG_PAR = 0
     else:
-        text_box.set_val("Выберите прямые для параллельности")
+        #print("Выберите прямые для параллельности")
+        message_box.set_val('Параллельность. Выберите первый отрезок')
         reset_flags()
         FLAG_PAR = 1
 
 
-def onButtonPerClicked(event):
-    """Наложение перпендикулярности"""
+def onButtonPerClicked(event):#перпендикулярность
     global FLAG_PER
 
-    if FLAG_PER == 1 or FLAG_PER == 2:
+    if FLAG_PER == 1 or FLAG_PER==2:
         FLAG_PER = 0
     else:
-        text_box.set_val("Выберите прямые для перпендикулярности")
+        #print("Выберите прямые для перпендикулярности")
+        message_box.set_val('Перпендикулярность. Выберите первый отрезок')
         reset_flags()
         FLAG_PER = 1
 
 
 def onButtonVerClicked(event):
     global FLAG_VER
-    
+
     if FLAG_VER == 1:
         FLAG_VER = 0
     else:
-        text_box.set_val("Выберите линию наложения вертикальности")
+        #print("Выберите линию наложения вертикальности")
+        message_box.set_val('Вертикальность. Выберите отрезок')
         reset_flags()
         FLAG_VER = 1
 
@@ -871,14 +839,13 @@ def onButtonHorClicked(event):
     if FLAG_HOR == 1:
         FLAG_HOR = 0
     else:
-        text_box.set_val("Выберите линию наложения горизонтальности")
+        #print("Выберите линию наложения горизонтальности")
+        message_box.set_val('Горизонтальность. Выберите отрезок')
         reset_flags()
         FLAG_HOR = 1
 
 
 if __name__ == "__main__":
-    XAXES = [int(sys.argv[1]), int(sys.argv[2])]  # Command line arguments for field size
-    YAXES = [int(sys.argv[3]), int(sys.argv[4])]
     fig, graph_axes = pylab.subplots()
 
     graph_axes.set_xlim(XAXES)
@@ -888,66 +855,67 @@ if __name__ == "__main__":
     pylab.tight_layout()
 
     # Размеры окна и место для кнопок
-    fig.set_size_inches(16, 9)
-    fig.subplots_adjust(left=0.07, right=0.8, top=0.95, bottom=0.15)
+    fig.set_size_inches(12, 10)
+    fig.subplots_adjust(left=0.05, right=0.75, top=0.95, bottom=0.15)
 
-    # Кнопки для ограничений
-    axes_button_fp = pylab.axes([0.81, 0.865, 0.085, 0.085])
+    # Кнопки для ограничений для точек
+    axes_button_fp = pylab.axes([0.8, 0.865, 0.09, 0.09])
     img_fp = Image.open("./icons/fixpoint.png")
     button_fp = Button(axes_button_fp, None, img_fp)
     button_fp.on_clicked(onButtonFpClicked)
 
-    axes_button_ver = pylab.axes([0.905, 0.865, 0.085, 0.085])
-    img_ver = Image.open("./icons/verticality.png")
-    button_ver = Button(axes_button_ver, None, img_ver)
-    button_ver.on_clicked(onButtonVerClicked)
-
-    axes_button_dis = pylab.axes([0.81, 0.77, 0.085, 0.085])
+    axes_button_dis = pylab.axes([0.88, 0.865, 0.09, 0.09])
     img_dis = Image.open("./icons/distance.png")
     button_dis = Button(axes_button_dis, None, img_dis)
     button_dis.on_clicked(onButtonDisClicked)
 
-    axes_button_hor = pylab.axes([0.905, 0.77, 0.085, 0.085])
-    img_hor = Image.open("./icons/horizontality.png")
-    button_hor = Button(axes_button_hor, None, img_hor)
-    button_hor.on_clicked(onButtonHorClicked)
-
-    axes_button_pol = pylab.axes([0.905, 0.675, 0.085, 0.085])
-    img_pol = Image.open("./icons/pointonline.png")
-    button_pol= Button(axes_button_pol, None, img_pol)
-    button_pol.on_clicked(onButtonPolClicked)
-
-    axes_button_con = pylab.axes([0.81, 0.675, 0.085, 0.085])
+    axes_button_con = pylab.axes([0.8, 0.77, 0.09, 0.09])
     img_con = Image.open("./icons/concidence.png")
-    button_con= Button(axes_button_con, None, img_con)
+    button_con = Button(axes_button_con, None, img_con)
     button_con.on_clicked(onButtonConClicked)
 
-    axes_button_an = pylab.axes([0.81, 0.58, 0.085, 0.085])
-    img_an = Image.open("./icons/angle.png")
-    button_an= Button(axes_button_an, None, img_an)
-    button_an.on_clicked(onButtonAnClicked)
+    axes_button_pol = pylab.axes([0.88, 0.77, 0.09, 0.09])
+    img_pol = Image.open("./icons/pointonline.png")
+    button_pol = Button(axes_button_pol, None, img_pol)
+    button_pol.on_clicked(onButtonPolClicked)
 
-    axes_button_par = pylab.axes([0.905, 0.58, 0.085, 0.085])
+    # Кнопки ограничений для отрезков
+    axes_button_par = pylab.axes([0.8, 0.65, 0.09, 0.09])
     img_par = Image.open("./icons/parallelism.png")
     button_par = Button(axes_button_par, None, img_par)
     button_par.on_clicked(onButtonParClicked)
 
-    axes_button_per = pylab.axes([0.81, 0.485, 0.085, 0.085])
+    axes_button_per = pylab.axes([0.88, 0.65, 0.09, 0.09])
     img_per = Image.open("./icons/perpendicularity.png")
     button_per = Button(axes_button_per, None, img_per)
     button_per.on_clicked(onButtonPerClicked)
 
+    axes_button_ver = pylab.axes([0.8, 0.555, 0.09, 0.09])
+    img_ver = Image.open("./icons/verticality.png")
+    button_ver = Button(axes_button_ver, None, img_ver)
+    button_ver.on_clicked(onButtonVerClicked)
+
+    axes_button_hor = pylab.axes([0.88, 0.555, 0.09, 0.09])
+    img_hor = Image.open("./icons/horizontality.png")
+    button_hor = Button(axes_button_hor, None, img_hor)
+    button_hor.on_clicked(onButtonHorClicked)
+
+    axes_button_an = pylab.axes([0.8, 0.46, 0.09, 0.09])
+    img_an = Image.open("./icons/angle.png")
+    button_an= Button(axes_button_an, None, img_an)
+    button_an.on_clicked(onButtonAnClicked)
+
     # Кнопки для добаления примитивов
-    axes_radiobuttons = pylab.axes([0.829, 0.375, 0.14, 0.1])
-    radiobuttons_creationtype = RadioButtons(axes_radiobuttons, ['Точка', 'Прямая', 'Прямая между точек'])
+    axes_radiobuttons = pylab.axes([0.805, 0.31, 0.18, 0.1])
+    radiobuttons_creationtype = RadioButtons(axes_radiobuttons, ['Точка', 'Отрезок', 'Отрезок по точкам'])
     radiobuttons_creationtype.on_clicked(choose_creation_mode)
 
-    # 0.39 0.295
-    axes_button_del = pylab.axes([0.829, 0.285, 0.14, 0.08])
+    # Кнопки удаления примитивов или ограничений
+    axes_button_del = pylab.axes([0.805, 0.22, 0.18, 0.05])
     button_del = Button(axes_button_del, 'Удалить примитив', color="white")
     button_del.on_clicked(choose_delete_primitive_mode)
 
-    axes_button_delcon = pylab.axes([0.829, 0.195, 0.14, 0.08])
+    axes_button_delcon = pylab.axes([0.805, 0.16, 0.18, 0.05])
     button_delcon = Button(axes_button_delcon, 'Удалить ограничение', color="white")
     button_delcon.on_clicked(choose_delete_constraint_mode)
 
@@ -955,8 +923,7 @@ if __name__ == "__main__":
     fig.canvas.mpl_connect('button_press_event', on_click)
     fig.canvas.mpl_connect('pick_event', on_pick)
 
-    axbox = fig.add_axes([0.07, 0.03, 0.6, 0.08])
-    text_box = TextBox(axbox, None, textalignment="center")
-    text_box.set_val("Введите данные")  # Trigger `submit` with the initial string.
+    message_box_size = fig.add_axes([0.07, 0.03, 0.85, 0.08])
+    message_box = TextBox(message_box_size, None, textalignment="center")
 
     pylab.show()

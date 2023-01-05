@@ -1,4 +1,4 @@
-from objects.classes import Figure
+from primitives.classes import Figure
 
 
 class Line(Figure):

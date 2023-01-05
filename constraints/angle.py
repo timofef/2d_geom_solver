@@ -12,6 +12,10 @@ class Angle(Constraint):
         self.Name = "Угол"
         self.u = math.radians(angle)
 
+    def get_description(self):
+        return "Угол между отрезками {" + str(self.Points[0].v_return()) + "; " + str(self.Points[1].v_return()) \
+               + "} и {" + str(self.Points[2].v_return()) + "; " + str(self.Points[3].v_return()) + "}"
+
     def LocalCon(self, Del, lambdas):
         k = 9
         matrix = [0] * k
@@ -32,32 +36,17 @@ class Angle(Constraint):
         C = (c*a*a + a*b*d) - c*(a*a + b*b)*math.cos(self.u)*math.cos(self.u)
         D = (d*b*b + a*b*c) - d*(a*a + b*b)*math.cos(self.u)*math.cos(self.u)
 
-        matrix[0][0] = 1
-        matrix[1][1] = 1
-        matrix[2][2] = 1
-        matrix[3][3] = 1
-        matrix[4][4] = 1
-        matrix[5][5] = 1
-        matrix[6][6] = 1
-        matrix[7][7] = 1
+        for i in range(8):
+            matrix[i][i] = 1
 
-        matrix[0][8] = -2 * A
-        matrix[1][8] = -2 * B
-        matrix[2][8] = 2 * A
-        matrix[3][8] = 2 * B
-        matrix[4][8] = -2 * C
-        matrix[5][8] = -2 * D
-        matrix[6][8] = 2 * C
-        matrix[7][8] = 2 * D
-
-        matrix[8][0] = -2 * A
-        matrix[8][1] = -2 * B
-        matrix[8][2] = 2 * A
-        matrix[8][3] = 2 * B
-        matrix[8][4] = -2 * C
-        matrix[8][5] = -2 * D
-        matrix[8][6] = 2 * C
-        matrix[8][7] = 2 * D
+        matrix[0][8] = matrix[8][0] = -2 * A
+        matrix[1][8] = matrix[8][1] = -2 * B
+        matrix[2][8] = matrix[8][2] = 2 * A
+        matrix[3][8] = matrix[8][3] = 2 * B
+        matrix[4][8] = matrix[8][4] = -2 * C
+        matrix[5][8] = matrix[8][5] = -2 * D
+        matrix[6][8] = matrix[8][6] = 2 * C
+        matrix[7][8] = matrix[8][7] = 2 * D
 
         F = [0] * k
 

@@ -8,6 +8,9 @@ class Coincidence(Constraint):
         self.Ls = 2
         self.Name = "Совпадение"
 
+    def get_description(self):
+        return "Совпадение точек " + str(self.Points[0].v_return()) + " и " + str(self.Points[1].v_return())
+
     def LocalCon(self, deltas, lambdas):
         k = 6
         matrix = [0] * k
@@ -15,20 +18,13 @@ class Coincidence(Constraint):
             matrix[i] = [0] * k
 
         # Вклад в матрицу
-        matrix[0][0] = 1
-        matrix[1][1] = 1
-        matrix[2][2] = 1
-        matrix[3][3] = 1
+        for i in range(4):
+            matrix[i][i] = 1
 
-        matrix[0][4] = -1
-        matrix[1][5] = -1
-        matrix[2][4] = 1
-        matrix[3][5] = 1
-
-        matrix[4][0] = -1
-        matrix[5][1] = -1
-        matrix[4][2] = 1
-        matrix[5][3] = 1
+        matrix[0][4] = matrix[4][0] = -1
+        matrix[1][5] = matrix[5][1] = -1
+        matrix[2][4] = matrix[4][2] = 1
+        matrix[3][5] = matrix[5][3] = 1
 
         # Вклад в вектор F
         F = [0] * k
