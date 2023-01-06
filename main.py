@@ -117,13 +117,6 @@ def assemble_slae(deltas):
 
             # Получение дельт для точек, задействованных в данном ограничении
             for cp in con.Points:
-                # for gp in global_point_list:
-                #     if cp == gp:
-                #         point_index = global_point_list.index(gp)
-                #         D.append(delta_coordinates[point_index])
-                #         T.append(2 * point_index)
-                #         T.append(2 * point_index + 1)
-                #         break
                 point_index = global_point_list.index(cp)
                 D.append(delta_coordinates[point_index])
                 T.append(2 * point_index)
@@ -171,39 +164,23 @@ def solve_slae(matrix, f):
     # Прямой ход, зануление элементов под диагональю
     for h in range(alen - 1):
         for j in range(h + 1, alen):
-            # if matrix[j][h] != 0:
-            #     if -0.001 < matrix[h][h] < 0.001:
-            #         flag = 1
-            #         break
-            #     else:
-            #         m = matrix[j][h] / matrix[h][h]
-            #     try:
-            #         for i in range(h, alen):
-            #             matrix[j][i] -= m * matrix[h][i]
-            #         try:
-            #             f[j] -= m * f[h]
-            #             # flag = 0
-            #         except:
-            #             flag = 1
-            #         flag = 0
-            #     except:
-            #         flag = 1
-            # if -0.001 < matrix[h][h] < 0.001:
-            #     flag = 1
-            #     break
-            # else:
-            m = matrix[j][h] / matrix[h][h]
-            try:
-                for i in range(h, alen):
-                    matrix[j][i] -= m * matrix[h][i]
+            if matrix[j][h] != 0:
+                if -0.001 < matrix[h][h] < 0.001:
+                    flag = 1
+                    break
+                else:
+                    m = matrix[j][h] / matrix[h][h]
                 try:
+                    for i in range(h, alen):
+                        matrix[j][i] -= m * matrix[h][i]
+                    #try:
                     f[j] -= m * f[h]
-                    # flag = 0
+                    #    flag = 0
+                    #except:
+                    #    flag = 1
+                    flag = 0
                 except:
                     flag = 1
-                flag = 0
-            except:
-                flag = 1
     result = [0] * alen
 
     if flag:
