@@ -1,4 +1,4 @@
-import pylab
+import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 from matplotlib.widgets import RadioButtons
 from matplotlib.widgets import TextBox
@@ -168,26 +168,42 @@ def solve_slae(matrix, f):
     alen = len(f)
     flag = 0
 
-    # Прямой ход
+    # Прямой ход, зануление элементов под диагональю
     for h in range(alen - 1):
         for j in range(h + 1, alen):
-            if matrix[j][h] != 0:
-                if -0.001 < matrix[h][h] < 0.001:
-                    flag = 1
-                    break
-                else:
-                    m = matrix[j][h] / matrix[h][h]
+            # if matrix[j][h] != 0:
+            #     if -0.001 < matrix[h][h] < 0.001:
+            #         flag = 1
+            #         break
+            #     else:
+            #         m = matrix[j][h] / matrix[h][h]
+            #     try:
+            #         for i in range(h, alen):
+            #             matrix[j][i] -= m * matrix[h][i]
+            #         try:
+            #             f[j] -= m * f[h]
+            #             # flag = 0
+            #         except:
+            #             flag = 1
+            #         flag = 0
+            #     except:
+            #         flag = 1
+            # if -0.001 < matrix[h][h] < 0.001:
+            #     flag = 1
+            #     break
+            # else:
+            m = matrix[j][h] / matrix[h][h]
+            try:
+                for i in range(h, alen):
+                    matrix[j][i] -= m * matrix[h][i]
                 try:
-                    for i in range(h, alen):
-                        matrix[j][i] -= m * matrix[h][i]
-                    try:
-                        f[j] -= m * f[h]
-                        flag = 0
-                    except:
-                        flag = 1
-                    flag = 0
+                    f[j] -= m * f[h]
+                    # flag = 0
                 except:
                     flag = 1
+                flag = 0
+            except:
+                flag = 1
     result = [0] * alen
 
     if flag:
@@ -245,7 +261,7 @@ def update_draft():
 
     graph_axes.plot(aX, aY, 'o', color='black', picker=True, pickradius=5, zorder=2.5)
     graph_axes.grid()
-    pylab.draw()
+    plt.draw()
 
 
 # Обработка кликов в рабочем поле
@@ -833,76 +849,75 @@ def onButtonHorClicked(event):
 
 
 if __name__ == "__main__":
-    fig, graph_axes = pylab.subplots()
-
+    fig, graph_axes = plt.subplots()
     graph_axes.set_xlim(XAXES)
     graph_axes.set_ylim(YAXES)
     graph_axes.aspect = 1
     graph_axes.grid()
-    pylab.tight_layout()
+    plt.tight_layout()
 
     # Размеры окна и место для кнопок
     fig.set_size_inches(12, 10)
     fig.subplots_adjust(left=0.05, right=0.75, top=0.95, bottom=0.15)
 
     # Кнопки для ограничений для точек
-    axes_button_fp = pylab.axes([0.8, 0.865, 0.09, 0.09])
+    axes_button_fp = plt.axes([0.8, 0.865, 0.09, 0.09])
     img_fp = Image.open("./img/fix.png")
     button_fp = Button(axes_button_fp, None, img_fp)
     button_fp.on_clicked(onButtonFpClicked)
 
-    axes_button_dis = pylab.axes([0.88, 0.865, 0.09, 0.09])
+    axes_button_dis = plt.axes([0.88, 0.865, 0.09, 0.09])
     img_dis = Image.open("./img/distance.png")
     button_dis = Button(axes_button_dis, None, img_dis)
     button_dis.on_clicked(onButtonDisClicked)
 
-    axes_button_con = pylab.axes([0.8, 0.77, 0.09, 0.09])
+    axes_button_con = plt.axes([0.8, 0.77, 0.09, 0.09])
     img_con = Image.open("./img/coincidence.png")
     button_con = Button(axes_button_con, None, img_con)
     button_con.on_clicked(onButtonConClicked)
 
-    axes_button_pol = pylab.axes([0.88, 0.77, 0.09, 0.09])
+    axes_button_pol = plt.axes([0.88, 0.77, 0.09, 0.09])
     img_pol = Image.open("./img/point_on_line.png")
     button_pol = Button(axes_button_pol, None, img_pol)
     button_pol.on_clicked(onButtonPolClicked)
 
     # Кнопки ограничений для отрезков
-    axes_button_par = pylab.axes([0.8, 0.65, 0.09, 0.09])
+    axes_button_par = plt.axes([0.8, 0.65, 0.09, 0.09])
     img_par = Image.open("./img/parallel.png")
     button_par = Button(axes_button_par, None, img_par)
     button_par.on_clicked(onButtonParClicked)
 
-    axes_button_per = pylab.axes([0.88, 0.65, 0.09, 0.09])
+    axes_button_per = plt.axes([0.88, 0.65, 0.09, 0.09])
     img_per = Image.open("./img/perpendicular.png")
     button_per = Button(axes_button_per, None, img_per)
     button_per.on_clicked(onButtonPerClicked)
 
-    axes_button_ver = pylab.axes([0.8, 0.555, 0.09, 0.09])
+    axes_button_ver = plt.axes([0.8, 0.555, 0.09, 0.09])
     img_ver = Image.open("./img/vertical.png")
     button_ver = Button(axes_button_ver, None, img_ver)
     button_ver.on_clicked(onButtonVerClicked)
 
-    axes_button_hor = pylab.axes([0.88, 0.555, 0.09, 0.09])
+    axes_button_hor = plt.axes([0.88, 0.555, 0.09, 0.09])
     img_hor = Image.open("./img/horizontal.png")
     button_hor = Button(axes_button_hor, None, img_hor)
     button_hor.on_clicked(onButtonHorClicked)
 
-    axes_button_an = pylab.axes([0.8, 0.46, 0.09, 0.09])
+    axes_button_an = plt.axes([0.8, 0.46, 0.09, 0.09])
     img_an = Image.open("./img/angle.png")
     button_an= Button(axes_button_an, None, img_an)
     button_an.on_clicked(onButtonAnClicked)
 
     # Кнопки для добаления примитивов
-    axes_radiobuttons = pylab.axes([0.805, 0.31, 0.18, 0.1])
+    axes_radiobuttons = plt.axes([0.805, 0.31, 0.18, 0.1])
     radiobuttons_creationtype = RadioButtons(axes_radiobuttons, ['Точка', 'Отрезок', 'Отрезок по точкам'])
     radiobuttons_creationtype.on_clicked(choose_creation_mode)
 
     # Кнопки удаления примитивов или ограничений
-    axes_button_del = pylab.axes([0.805, 0.22, 0.18, 0.05])
+    axes_button_del = plt.axes([0.805, 0.22, 0.18, 0.05])
     button_del = Button(axes_button_del, 'Удалить примитив', color="white")
     button_del.on_clicked(choose_delete_primitive_mode)
 
-    axes_button_delcon = pylab.axes([0.805, 0.16, 0.18, 0.05])
+    axes_button_delcon = plt.axes([0.805, 0.16, 0.18, 0.05])
     button_delcon = Button(axes_button_delcon, 'Удалить ограничение', color="white")
     button_delcon.on_clicked(choose_delete_constraint_mode)
 
@@ -910,7 +925,8 @@ if __name__ == "__main__":
     fig.canvas.mpl_connect('button_press_event', on_click)
     fig.canvas.mpl_connect('pick_event', on_pick)
 
+    # Окно с сообщениями под рабочим полем
     message_box_size = fig.add_axes([0.07, 0.03, 0.85, 0.08])
     message_box = TextBox(message_box_size, None, textalignment="center")
 
-    pylab.show()
+    plt.show()
