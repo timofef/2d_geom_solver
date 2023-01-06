@@ -310,7 +310,7 @@ def on_pick(event):
                     if get_line_by_coord(oLine, xdata, ydata):
                         delete_line(oLine)
                         FLAG_DEL = 0
-                        button_del.color = 'white'
+                        button_delete_primitive.color = 'white'
 
             if FLAG_HOR:  # горизонтальность
                 for oLine in global_line_list:
@@ -415,14 +415,14 @@ def on_pick(event):
                 if pointInd != -1:
                     delete_point(global_point_list[pointInd])
                     FLAG_DEL = 0
-                    button_del.color = 'white'
+                    button_delete_primitive.color = 'white'
                     pointInd = -1
                 else:
                     for oPoint in global_point_list:
                         if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
                             delete_point(oPoint)
                             FLAG_DEL = 0
-                            button_del.color = 'white'
+                            button_delete_primitive.color = 'white'
 
             if FLAG_CRE == 2 and event.mouseevent.button == 3:  # Добавление отрезка по 2-м существующим точкам
                 if PointCount == 0:
@@ -618,7 +618,6 @@ def add_line(p1, p2):
     update_draft()
 
 
-# TODO
 # Удаление примитивов
 def remove_point_in_constraints(point):
     while True:
@@ -653,8 +652,8 @@ def delete_point(point_to_delete):
 
 
 def delete_line(line_to_delete):
+    '''Удаление отрезка'''
     global global_point_list, global_line_list
-    
     p1 = global_point_list[global_point_list.index(line_to_delete.oPoint1)]
     p2 = global_point_list[global_point_list.index(line_to_delete.oPoint2)]
     p1_incident_count = -1
@@ -686,10 +685,10 @@ def choose_delete_primitive_mode(event):
     global FLAG_DEL
     if FLAG_DEL == 1:
         FLAG_DEL = 0
-        button_del.color = 'white'
+        button_delete_primitive.color = 'white'
     else:
         FLAG_DEL = 1
-        button_del.color = 'grey'
+        button_delete_primitive.color = 'grey'
 
 
 def choose_delete_constraint_mode(event):
@@ -697,11 +696,11 @@ def choose_delete_constraint_mode(event):
     global FLAG_DELCON
     if FLAG_DELCON == 1:
         FLAG_DELCON = 0
-        button_delcon.color = 'white'
+        button_delete_constraint.color = 'white'
     else:
         if len(Constraints) != 0:
             FLAG_DELCON = 1
-            button_delcon.color = 'grey'
+            button_delete_constraint.color = 'grey'
             message_box.set_val('Укажите в терминале номер ограничения для удаления')
             print("Номер ограничения для удаления:")
             flag = 1
@@ -719,7 +718,7 @@ def choose_delete_constraint_mode(event):
                     print("Ограничения с таким индексом нет")
 
             FLAG_DELCON = 0
-            button_delcon.color = 'white'
+            button_delete_constraint.color = 'white'
         else:
             print("Ограничений нет, удалять нечего")
 
@@ -736,7 +735,7 @@ def choose_creation_mode(label):
 
 
 # Обработка нажатия на кнопки ограничений
-def onButtonFpClicked(event):
+def click_fix_point(event):
     global FLAG_FIX
 
     if FLAG_FIX == 1:  # Начать заново при повторном клике на кнопку
@@ -747,7 +746,7 @@ def onButtonFpClicked(event):
         FLAG_FIX = 1
 
 
-def onButtonDisClicked(event):  # Расстояние
+def click_distance(event):  # Расстояние
     global FLAG_DIS
 
     if FLAG_DIS == 1 or FLAG_DIS==2:
@@ -758,7 +757,7 @@ def onButtonDisClicked(event):  # Расстояние
         FLAG_DIS = 1
 
 
-def onButtonPolClicked(event):  # точка на линии
+def click_point_on_line(event):  # точка на линии
     global FLAG_POL
 
     if FLAG_POL == 1 or FLAG_POL==2:
@@ -769,7 +768,7 @@ def onButtonPolClicked(event):  # точка на линии
         FLAG_POL = 1
 
 
-def onButtonConClicked(event):  # совпадение точек
+def click_coincidence(event):  # совпадение точек
     global FLAG_CON
 
     if FLAG_CON == 1 or FLAG_CON == 2:
@@ -780,7 +779,7 @@ def onButtonConClicked(event):  # совпадение точек
         FLAG_CON = 1
 
 
-def onButtonAnClicked(event):  # угол
+def click_angle(event):  # угол
     global FLAG_ANG
 
     if FLAG_ANG == 1 or FLAG_ANG == 2:
@@ -791,7 +790,7 @@ def onButtonAnClicked(event):  # угол
         FLAG_ANG = 1
 
 
-def onButtonParClicked(event):  # параллельность
+def click_parallel(event):  # параллельность
     global FLAG_PAR
 
     if FLAG_PAR == 1 or FLAG_PAR == 2:
@@ -802,7 +801,7 @@ def onButtonParClicked(event):  # параллельность
         FLAG_PAR = 1
 
 
-def onButtonPerClicked(event):  # перпендикулярность
+def click_perpendicular(event):  # перпендикулярность
     global FLAG_PER
 
     if FLAG_PER == 1 or FLAG_PER == 2:
@@ -813,7 +812,7 @@ def onButtonPerClicked(event):  # перпендикулярность
         FLAG_PER = 1
 
 
-def onButtonVerClicked(event):
+def click_vertical(event):
     global FLAG_VER
 
     if FLAG_VER == 1:
@@ -824,7 +823,7 @@ def onButtonVerClicked(event):
         FLAG_VER = 1
 
 
-def onButtonHorClicked(event):
+def click_horizontal(event):
     global FLAG_HOR
 
     if FLAG_HOR == 1:
@@ -833,6 +832,18 @@ def onButtonHorClicked(event):
         message_box.set_val('Горизонтальность. Выберите отрезок')
         reset_flags()
         FLAG_HOR = 1
+
+
+def init_button(place, title, icon, callback):
+    img = None
+    label = None
+    if icon:
+        img = Image.open(icon)
+    if title:
+        label = title
+    button = Button(place, label, img)
+    button.on_clicked(callback)
+    return button
 
 
 if __name__ == "__main__":
@@ -848,51 +859,17 @@ if __name__ == "__main__":
     fig.subplots_adjust(left=0.05, right=0.75, top=0.95, bottom=0.15)
 
     # Кнопки для ограничений для точек
-    axes_button_fp = plt.axes([0.8, 0.865, 0.09, 0.09])
-    img_fp = Image.open("./img/fix.png")
-    button_fp = Button(axes_button_fp, None, img_fp)
-    button_fp.on_clicked(onButtonFpClicked)
-
-    axes_button_dis = plt.axes([0.88, 0.865, 0.09, 0.09])
-    img_dis = Image.open("./img/distance.png")
-    button_dis = Button(axes_button_dis, None, img_dis)
-    button_dis.on_clicked(onButtonDisClicked)
-
-    axes_button_con = plt.axes([0.8, 0.77, 0.09, 0.09])
-    img_con = Image.open("./img/coincidence.png")
-    button_con = Button(axes_button_con, None, img_con)
-    button_con.on_clicked(onButtonConClicked)
-
-    axes_button_pol = plt.axes([0.88, 0.77, 0.09, 0.09])
-    img_pol = Image.open("./img/point_on_line.png")
-    button_pol = Button(axes_button_pol, None, img_pol)
-    button_pol.on_clicked(onButtonPolClicked)
+    button_fix_point = init_button(plt.axes([0.8, 0.865, 0.09, 0.09]), None, "./img/fix.png", click_fix_point)
+    button_distance = init_button(plt.axes([0.88, 0.865, 0.09, 0.09]), None, "./img/distance.png", click_distance)
+    button_coincidence = init_button(plt.axes([0.8, 0.77, 0.09, 0.09]), None, "./img/coincidence.png", click_coincidence)
+    button_point_on_line = init_button(plt.axes([0.88, 0.77, 0.09, 0.09]), None, "./img/point_on_line.png", click_point_on_line)
 
     # Кнопки ограничений для отрезков
-    axes_button_par = plt.axes([0.8, 0.65, 0.09, 0.09])
-    img_par = Image.open("./img/parallel.png")
-    button_par = Button(axes_button_par, None, img_par)
-    button_par.on_clicked(onButtonParClicked)
-
-    axes_button_per = plt.axes([0.88, 0.65, 0.09, 0.09])
-    img_per = Image.open("./img/perpendicular.png")
-    button_per = Button(axes_button_per, None, img_per)
-    button_per.on_clicked(onButtonPerClicked)
-
-    axes_button_ver = plt.axes([0.8, 0.555, 0.09, 0.09])
-    img_ver = Image.open("./img/vertical.png")
-    button_ver = Button(axes_button_ver, None, img_ver)
-    button_ver.on_clicked(onButtonVerClicked)
-
-    axes_button_hor = plt.axes([0.88, 0.555, 0.09, 0.09])
-    img_hor = Image.open("./img/horizontal.png")
-    button_hor = Button(axes_button_hor, None, img_hor)
-    button_hor.on_clicked(onButtonHorClicked)
-
-    axes_button_an = plt.axes([0.8, 0.46, 0.09, 0.09])
-    img_an = Image.open("./img/angle.png")
-    button_an= Button(axes_button_an, None, img_an)
-    button_an.on_clicked(onButtonAnClicked)
+    button_parallel = init_button(plt.axes([0.8, 0.65, 0.09, 0.09]), None, "./img/parallel.png", click_parallel)
+    button_perpendicular = init_button(plt.axes([0.88, 0.65, 0.09, 0.09]), None, "./img/perpendicular.png", click_perpendicular)
+    button_vertical = init_button(plt.axes([0.8, 0.555, 0.09, 0.09]), None, "./img/vertical.png", click_vertical)
+    button_horizontal = init_button(plt.axes([0.88, 0.555, 0.09, 0.09]), None, "./img/horizontal.png", click_horizontal)
+    button_angle = init_button(plt.axes([0.8, 0.46, 0.09, 0.09]), None, "./img/angle.png", click_angle)
 
     # Кнопки для добаления примитивов
     axes_radiobuttons = plt.axes([0.805, 0.31, 0.18, 0.1])
@@ -900,13 +877,8 @@ if __name__ == "__main__":
     radiobuttons_creationtype.on_clicked(choose_creation_mode)
 
     # Кнопки удаления примитивов или ограничений
-    axes_button_del = plt.axes([0.805, 0.22, 0.18, 0.05])
-    button_del = Button(axes_button_del, 'Удалить примитив', color="white")
-    button_del.on_clicked(choose_delete_primitive_mode)
-
-    axes_button_delcon = plt.axes([0.805, 0.16, 0.18, 0.05])
-    button_delcon = Button(axes_button_delcon, 'Удалить ограничение', color="white")
-    button_delcon.on_clicked(choose_delete_constraint_mode)
+    button_delete_primitive = init_button(plt.axes([0.805, 0.22, 0.18, 0.05]), "Удалить примитив", None, choose_delete_primitive_mode)
+    button_delete_constraint = init_button(plt.axes([0.805, 0.16, 0.18, 0.05]), "Удалить ограничение", None, choose_delete_constraint_mode)
 
     # Обработчики кликов
     fig.canvas.mpl_connect('button_press_event', on_click)
