@@ -620,76 +620,63 @@ def add_line(p1, p2):
 
 # TODO
 # Удаление примитивов
-def delete_point(point_to_delete):
-    # Удаление точки
-    global global_point_list, global_line_list
-    # Если к точке привязаны прямые, то они тоже стираются
-    aLinelist_copy = []
-    for oLine in global_line_list:
-        print(oLine.xy_return())
-        if point_to_delete == oLine.oPoint1 or point_to_delete == oLine.oPoint2:
-            aLinelist_copy.append(oLine)
-    for oLine1 in aLinelist_copy:
-        global_line_list.remove(oLine1)
-        oLine1.delLine()
-
+def remove_point_in_constraints(point):
     while True:
         ttt = 0
         for con in Constraints:
-            if point_to_delete in con.Points:
+            if point in con.Points:
                 ttt = 1
                 Constraints.remove(con)
         if ttt == 0:
             break
-    print(len(Constraints))
 
-    global_point_list.remove(point_to_delete)
-    point_to_delete.delPoint()
+    global_point_list.remove(point)
+    point.delPoint()
+
+
+def delete_point(point_to_delete):
+    '''Удаление точки'''
+    global global_point_list, global_line_list
+    # Если к точке привязаны прямые, то они тоже стираются
+    line_list_copy = []
+    for line in global_line_list:
+        if point_to_delete == line.oPoint1 or point_to_delete == line.oPoint2:
+            line_list_copy.append(line)
+    for line in line_list_copy:
+        global_line_list.remove(line)
+        line.delLine()
+
+    remove_point_in_constraints(point_to_delete)
+
+    # Перерисовываем картинку
     update_draft()
 
 
-# TODO
 def delete_line(line_to_delete):
     global global_point_list, global_line_list
     
-    oPoint1 = global_point_list[global_point_list.index(line_to_delete.oPoint1)]
-    oPoint2 = global_point_list[global_point_list.index(line_to_delete.oPoint2)]
-    iP1cnt = -1
-    iP2cnt = -1
+    p1 = global_point_list[global_point_list.index(line_to_delete.oPoint1)]
+    p2 = global_point_list[global_point_list.index(line_to_delete.oPoint2)]
+    p1_incident_count = -1
+    p2_incident_count = -1
 
-    for oLine_ in global_line_list:  # Считаем кол-во точек из Линии в списке линий
-        if oPoint1 == oLine_.oPoint1 or oPoint1 == oLine_.oPoint2:
-            iP1cnt += 1
-        if oPoint2 == oLine_.oPoint1 or oPoint2 == oLine_.oPoint2:
-            iP2cnt += 1
+    # Считаем, со сколькими отрезками смежны точки из удаляемого отрезка
+    for oLine_ in global_line_list:
+        if p1 == oLine_.oPoint1 or p1 == oLine_.oPoint2:
+            p1_incident_count += 1
+        if p2 == oLine_.oPoint1 or p2 == oLine_.oPoint2:
+            p2_incident_count += 1
 
+    # Удалем прямую и точки
     global_line_list.remove(line_to_delete)
     line_to_delete.delLine()
+
     # Если точка Линии больше нигде не используется, то её стираем, иначе не трогаем
-    if not iP1cnt:
-        while True:
-            ttt = 0
-            for con in Constraints:
-                if oPoint1 in con.Points:
-                    ttt = 1
-                    Constraints.remove(con)
-            if ttt == 0:
-                break
-
-        global_point_list.remove(oPoint1)
-        oPoint1.delPoint()
-    if not iP2cnt:
-        while True:
-            ttt = 0
-            for con in Constraints:
-                if oPoint2 in con.Points:
-                    ttt = 1
-                    Constraints.remove(con)
-            if ttt == 0:
-                break
-
-        global_point_list.remove(oPoint2)
-        oPoint2.delPoint()
+    if not p1_incident_count:
+        remove_point_in_constraints(p1)
+    if not p2_incident_count:
+        remove_point_in_constraints(p2)
+    # Перерисовываем картинку
     update_draft()
 
 
