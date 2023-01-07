@@ -222,21 +222,21 @@ def update_draft():
             print(str(i) + ": " + con.get_description())
             i += 1
 
-    aX = []
-    aY = []
     graph_axes.clear()
     graph_axes.set_xlim(XAXES)
     graph_axes.set_ylim(YAXES)
 
-    for oPoint in global_point_list:
-        aX.append(oPoint.v_return()[0])
-        aY.append(oPoint.v_return()[1])
+    point_x = []
+    point_y = []
+    for point in global_point_list:
+        point_x.append(point.v_return()[0])
+        point_y.append(point.v_return()[1])
+    graph_axes.plot(point_x, point_y, 'o', color='black', picker=True, pickradius=5, zorder=2.5)
 
-    for oLine in global_line_list:
-        x, y = oLine.xy_return()
+    for line in global_line_list:
+        x, y = line.xy_return()
         graph_axes.plot(x, y, marker='o', picker=True, pickradius=5)
 
-    graph_axes.plot(aX, aY, 'o', color='black', picker=True, pickradius=5, zorder=2.5)
     graph_axes.grid()
     plt.draw()
 
@@ -248,7 +248,7 @@ def on_click(event):
     if check_time(datetime.now(), 0):
         if event.button == 3 and FLAG_CRE == 0:  # Создание точки
             add_point(event)
-        elif event.button == 3 and FLAG_CRE == 1:  # Создание отрезка
+        elif event.button == 3 and FLAG_CRE == 1:  # Создание отрезка вместе с точками
             if PointCount == 0:  # Выбрана первая точка
                 add_point(event)
                 PointCount = 1
@@ -262,37 +262,39 @@ def on_pick(event):
     """Обработчик клика по существующему примитиву"""
     global tmp, global_point_list, graph_axes, FLAG_DEL, FLAG_CRE, PointCount, PointInd, FLAG_FIX, \
         Constraints, FLAG_HOR, FLAG_VER, FLAG_DIS, FLAG_POL, FLAG_CON, FLAG_ANG, FLAG_PAR, FLAG_PER
+
     if check_time(datetime.now(), 1):
         thisline = event.artist
         xdata = thisline.get_xdata()
         ydata = thisline.get_ydata()
         ind = event.ind
 
-        msx, msy = event.mouseevent.xdata, event.mouseevent.ydata
-        dist = np.sqrt((np.array(xdata)-msx)**2+(np.array(ydata)-msy)**2)
+        # Координата клика
+        mouse_x, mouse_y = event.mouseevent.xdata, event.mouseevent.ydata
+        dist = np.sqrt((np.array(xdata) - mouse_x)**2 + (np.array(ydata) - mouse_y)**2)
         mindist = min(dist)
 
-        dist_kostyl = 1.0  # Поиск индекса ближайшей точки
+        #distance_to_point = 1.0  # Поиск индекса ближайшей точки
         pointInd = -1
-        for oPoint in global_point_list:
-            dist_kostyl = np.sqrt((oPoint.aCoord[0]-msx)**2+(oPoint.aCoord[1]-msy)**2)
-            if dist_kostyl < 0.1:
-                pointInd = global_point_list.index(oPoint)
-        dist_kostyl = 1.0
+        for point in global_point_list:
+            distance_to_point = np.sqrt((point.aCoord[0] - mouse_x)**2 + (point.aCoord[1] - mouse_y)**2)
+            if distance_to_point < 0.1:
+                pointInd = global_point_list.index(point)
+        #distance_to_point = 1.0
 
-        # Если кликнули на отрезок
+        # Если кликнули не по точке
         if mindist > 0.1 and pointInd == -1:
             if FLAG_DEL:  # при удалении линии
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        delete_line(oLine)
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        delete_line(line)
                         FLAG_DEL = 0
                         button_delete_primitive.color = 'white'
 
             if FLAG_HOR:  # горизонтальность
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp = [oLine.oPoint1, oLine.oPoint2]
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp = [line.oPoint1, line.oPoint2]
                         tmp2 = constraints.horizontal.Horizontal(tmp)
                         Constraints.append(tmp2)
                         update_draft()
@@ -300,9 +302,9 @@ def on_pick(event):
                         message_box.set_val('Ограничение наложено')
 
             if FLAG_VER:  # вертикальность
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp = [oLine.oPoint1, oLine.oPoint2]
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp = [line.oPoint1, line.oPoint2]
                         tmp2 = constraints.vertical.Vertical(tmp)
                         Constraints.append(tmp2)
                         update_draft()
@@ -310,53 +312,51 @@ def on_pick(event):
                         message_box.set_val('Ограничение наложено')
 
             if FLAG_PAR == 2:  # параллельность
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp.append(oLine.oPoint1)
-                        tmp.append(oLine.oPoint2)
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp.append(line.oPoint1)
+                        tmp.append(line.oPoint2)
                         tmp2 = constraints.parallel.Parallel(tmp)
                         Constraints.append(tmp2)
                         update_draft()
                         FLAG_PAR = 0
                         message_box.set_val('Ограничение наложено')
-
             if FLAG_PAR == 1:
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp = [oLine.oPoint1, oLine.oPoint2]
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp = [line.oPoint1, line.oPoint2]
                         message_box.set_val('Параллельность. Выберите второй отрезок')
                         FLAG_PAR = 2
 
             if FLAG_PER == 2:  # перпендикулярность
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp.append(oLine.oPoint1)
-                        tmp.append(oLine.oPoint2)
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp.append(line.oPoint1)
+                        tmp.append(line.oPoint2)
                         tmp2 = constraints.perpendicular.Perpendicular(tmp)
                         Constraints.append(tmp2)
                         update_draft()
                         FLAG_PER = 0
                         message_box.set_val('Ограничение наложено')
-
             if FLAG_PER == 1:
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp = [oLine.oPoint1, oLine.oPoint2]
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp = [line.oPoint1, line.oPoint2]
                         message_box.set_val('Перпендикулярность. Выберите второй отрезок')
                         FLAG_PER = 2
 
             if FLAG_POL == 1:  # точка на линии
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp = [oLine.oPoint1, oLine.oPoint2]
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp = [line.oPoint1, line.oPoint2]
                         message_box.set_val('Точка на прямой. Выберите точку')
                         FLAG_POL = 2
 
             if FLAG_ANG == 2:  # угол, выбор второго отрезка и задание угла
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp.append(oLine.oPoint1)
-                        tmp.append(oLine.oPoint2)
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp.append(line.oPoint1)
+                        tmp.append(line.oPoint2)
                         message_box.set_val('Угол. Введите значение в терминале (градусы)')
                         print('Введите значение угла: ')
                         u = input()
@@ -377,11 +377,10 @@ def on_pick(event):
                             message_box.set_val('Некорректно введено значение угла')
                             print("Некорректно введено значение угла")
                             FLAG_ANG = 0
-
             if FLAG_ANG == 1:
-                for oLine in global_line_list:
-                    if get_line_by_coord(oLine, xdata, ydata):
-                        tmp = [oLine.oPoint1, oLine.oPoint2]
+                for line in global_line_list:
+                    if get_line_by_coord(line, xdata, ydata):
+                        tmp = [line.oPoint1, line.oPoint2]
                         message_box.set_val('Угол. Выберите второй отрезок')
                         FLAG_ANG = 2
 
@@ -395,9 +394,9 @@ def on_pick(event):
                     button_delete_primitive.color = 'white'
                     pointInd = -1
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                            delete_point(oPoint)
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                            delete_point(point)
                             FLAG_DEL = 0
                             button_delete_primitive.color = 'white'
 
@@ -410,9 +409,9 @@ def on_pick(event):
                         pointInd = -1
                         return 0
                     else:
-                        for oPoint in global_point_list:
-                            if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                                PointInd = global_point_list.index(oPoint)
+                        for point in global_point_list:
+                            if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                                PointInd = global_point_list.index(point)
                                 message_box.set_val('Найдена первая точка')
                                 PointCount = 1
                                 return 0
@@ -427,11 +426,11 @@ def on_pick(event):
                             pointInd = -1
                             return 0
                     else:
-                        for oPoint in global_point_list:
-                            if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                                if global_point_list[PointInd] != oPoint:
+                        for point in global_point_list:
+                            if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                                if global_point_list[PointInd] != point:
                                     message_box.set_val('Найдена вторая точка')
-                                    add_line(global_point_list[PointInd], oPoint)
+                                    add_line(global_point_list[PointInd], point)
                                     PointCount = 0
                                     PointInd = 0
                                     return 0
@@ -446,9 +445,9 @@ def on_pick(event):
                     FLAG_FIX = 0
                     pointInd = -1
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                            tmp = [oPoint]
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                            tmp = [point]
                             tmp2 = constraints.fix.Fixed(tmp, Fixedlist)
                             Constraints.append(tmp2)
                             update_draft()
@@ -481,9 +480,9 @@ def on_pick(event):
                         FLAG_DIS = 0
 
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                            tmp.append(oPoint)
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                            tmp.append(point)
                             message_box.set_val('Расстояние. Введите расстояние в терминале')
                             print('Введите расстояние: ')
                             d = input()
@@ -511,10 +510,10 @@ def on_pick(event):
                     FLAG_DIS = 2
                     pointInd = -1
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
                             tmp = []
-                            tmp.append(oPoint)
+                            tmp.append(point)
                             message_box.set_val('Расстояние. Выберите вторую точку')
                             FLAG_DIS = 2
 
@@ -528,9 +527,9 @@ def on_pick(event):
                     pointInd = -1
                     message_box.set_val('Ограничение наложено')
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                            tmp.append(oPoint)
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                            tmp.append(point)
                             tmp2 = constraints.coincidence.Coincidence(tmp)
                             Constraints.append(tmp2)
                             update_draft()
@@ -539,16 +538,14 @@ def on_pick(event):
 
             if FLAG_CON == 1:
                 if pointInd != -1:
-                    tmp = []
-                    tmp.append(global_point_list[pointInd])
+                    tmp = [global_point_list[pointInd]]
                     message_box.set_val('Совпадение точек. Выберите вторую точку')
                     FLAG_CON = 2
                     pointInd = -1
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                            tmp = []
-                            tmp.append(oPoint)
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                            tmp = [point]
                             message_box.set_val('Совпадение точек. Выберите вторую точку')
                             FLAG_CON = 2
 
@@ -561,9 +558,9 @@ def on_pick(event):
                     FLAG_POL = 0
                     pointInd = -1
                 else:
-                    for oPoint in global_point_list:
-                        if oPoint.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
-                            tmp.append(oPoint)
+                    for point in global_point_list:
+                        if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
+                            tmp.append(point)
                             tmp2 = constraints.pointOnLine.PointOnLine(tmp)
                             Constraints.append(tmp2)
                             update_draft()
@@ -726,7 +723,7 @@ def click_fix_point(event):
 def click_distance(event):  # Расстояние
     global FLAG_DIS
 
-    if FLAG_DIS == 1 or FLAG_DIS==2:
+    if FLAG_DIS == 1 or FLAG_DIS == 2:
         FLAG_DIS = 0
     else:
         message_box.set_val('Расстояние. Выберите первую точку')
@@ -737,7 +734,7 @@ def click_distance(event):  # Расстояние
 def click_point_on_line(event):  # точка на линии
     global FLAG_POL
 
-    if FLAG_POL == 1 or FLAG_POL==2:
+    if FLAG_POL == 1 or FLAG_POL == 2:
         FLAG_POL = 0
     else:
         message_box.set_val('Точка на прямой. Выберите отрезок, задающий прямую')

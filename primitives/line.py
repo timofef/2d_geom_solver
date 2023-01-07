@@ -16,7 +16,5 @@ class Line(Figure):
         return aXcoord, aYcoord
 
     def delLine(self):
-        class_name = self.__class__.__name__
-        #print('{} уничтожен'.format(class_name))
         del self.oPoint1
         del self.oPoint2
