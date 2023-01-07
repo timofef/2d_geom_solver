@@ -11,6 +11,4 @@ class Point(Figure):
         return [round(self.aCoord[0], 10), round(self.aCoord[1], 10)]
 
     def delPoint(self):
-        class_name = self.__class__.__name__
-        print('{} уничтожен'.format(class_name))
         del self.aCoord

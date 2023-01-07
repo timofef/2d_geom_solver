@@ -47,7 +47,10 @@ def update_primitives():
         # Проходим по массиву ограничений, запоминанаем индексы задействованных точек и число множителей Лагранжа
         constrained_points_indexes = []
         lambdas_num = 0
+        #fixed_num = 0
         for constraint in Constraints:
+            # if constraint.Name == "Фиксация":
+            #     fixed_num += 1
             for point in constraint.Points:
                 point_global_index = global_point_list.index(point)
                 if point_global_index not in constrained_points_indexes:
@@ -55,7 +58,7 @@ def update_primitives():
             lambdas_num += constraint.getLs()
 
         if len(constrained_points_indexes) * 2 < lambdas_num:
-            print('Это уже перебор. Произошла переопределённость.')
+            print('Переопределённость. Удалите последнее ограничение')
             return 1
 
         deltas = [0] * (len(constrained_points_indexes) * 2 + lambdas_num)
@@ -65,6 +68,9 @@ def update_primitives():
         # Итерации метода Ньютона
         while True:
             matrix, f = assemble_slae(deltas, constrained_points_indexes, lambdas_num)
+
+            print(matrix)
+
             new_deltas, flag = solve_slae(matrix, f)
 
             if flag:
@@ -109,32 +115,29 @@ def assemble_slae(deltas, global_indexes, lambda_num):
 
     lamda_shift = 0
     for constraint in Constraints:
-        if constraint.Ls != 0:
-            D = []  # Дельты для перерасчёта локальных матриц
-            L = delta_lamdas[Constraints.index(constraint)]
-            T = []  # Индекс в глобальной матрице
-
-            # Получение дельт для точек, задействованных в данном ограничении
-            for constraint_point in constraint.Points:
-                global_point_index = global_point_list.index(constraint_point)
-                point_index = global_indexes.index(global_point_index)
-                D.append(delta_coordinates[point_index])
-                T.append(2 * point_index)
-                T.append(2 * point_index + 1)
-            # Получение дельт лямбда для данного ограничения и сдвига в индексах
-            # глобального вектора дельт для них
-            for i in range(len(L)):
-                T.append(2 * len(global_indexes) + lamda_shift + i)
-            lamda_shift += len(L)
-
-            # Получение локальной матрицы для данного ограничения
-            local_matrix, local_f = constraint.LocalCon(D, L)
-
-            # Ансамблирование
-            for i in range(len(T)):
-                for j in range(len(T)):
-                    matrix[T[i]][T[j]] += local_matrix[i][j]
-                f[T[i]] += local_f[i]
+        #if constraint.Ls != 0:
+        D = []  # Дельты для перерасчёта локальных матриц
+        L = delta_lamdas[Constraints.index(constraint)]
+        T = []  # Индекс в глобальной матрице
+        # Получение дельт для точек, задействованных в данном ограничении
+        for constraint_point in constraint.Points:
+            global_point_index = global_point_list.index(constraint_point)
+            point_index = global_indexes.index(global_point_index)
+            D.append(delta_coordinates[point_index])
+            T.append(2 * point_index)
+            T.append(2 * point_index + 1)
+        # Получение дельт лямбда для данного ограничения и сдвига в индексах
+        # глобального вектора дельт для них
+        for i in range(len(L)):
+            T.append(2 * len(global_indexes) + lamda_shift + i)
+        lamda_shift += len(L)
+        # Получение локальной матрицы для данного ограничения
+        local_matrix, local_f = constraint.LocalCon(D, L)
+        # Ансамблирование
+        for i in range(len(T)):
+            for j in range(len(T)):
+                matrix[T[i]][T[j]] += local_matrix[i][j]
+            f[T[i]] += local_f[i]
 
     return matrix, f
 
@@ -143,52 +146,24 @@ def assemble_slae(deltas, global_indexes, lambda_num):
 def solve_slae(matrix, f):
     global ULTRACOUNTER
 
-    # Размерность системы
     alen = len(f)
-    flag = 0
 
-    # Прямой ход, зануление элементов под диагональю
     for h in range(alen - 1):
         for j in range(h + 1, alen):
-            if matrix[j][h] != 0:
-                if -0.001 < matrix[h][h] < 0.001:
-                    flag = 1
-                    break
-                else:
-                    m = matrix[j][h] / matrix[h][h]
-                try:
-                    for i in range(h, alen):
-                        matrix[j][i] -= m * matrix[h][i]
-                    #try:
-                    f[j] -= m * f[h]
-                    #    flag = 0
-                    #except:
-                    #    flag = 1
-                    flag = 0
-                except:
-                    flag = 1
+            m = matrix[j][h] / matrix[h][h]
+            for i in range(h, alen):
+                matrix[j][i] -= m * matrix[h][i]
+            f[j] -= m * f[h]
     result = [0] * alen
-
-    if flag:
-        return result, flag
-
-    if -0.001 < matrix[alen - 1][alen - 1] < 0.001:
-        return result, flag
 
     # Обратный ход
     for h in range(alen - 1, -1, -1):
         m = 0
-        if not(-0.001 < matrix[h][h] < 0.001):
-            for i in range(h + 1, alen):
-                m += matrix[h][i] * result[i]
-            result[h] = (f[h] - m) / matrix[h][h]
-        else:
-            # print("Что-то определенно не так, скорее всего - переопределенность, а именно - излишняя фиксация")
-            ULTRACOUNTER += 1
-            if ULTRACOUNTER > 9:
-                flag = 1
+        for i in range(h + 1, alen):
+            m += matrix[h][i] * result[i]
+        result[h] = (f[h] - m) / matrix[h][h]
 
-    return result, flag
+    return result, 0
 
 
 # Отрисовка эскиза
