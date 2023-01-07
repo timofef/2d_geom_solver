@@ -60,9 +60,14 @@ def update_primitives():
 
     if len(Constraints) != 0:
         tmp = 2 * len(global_point_list)
+        l = 0
         for con in Constraints:
-            tmp += con.getLs()
-        deltas = [0] * tmp
+            l += con.getLs()
+        deltas = [0] * (tmp + l)
+
+        if len(global_point_list) * 2 < l + len(Fixedlist) * 2:
+            print("Переопределённость. Удалите последнее добавленное ограничение")
+            return 1
 
         ULTRACOUNTER = 0
 
