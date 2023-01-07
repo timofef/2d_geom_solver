@@ -39,45 +39,43 @@ def check_time(curtime, mode):
             return 1
 
 
-# Сброс флагов режима
-def reset_flags():
-    global FLAG_HOR, FLAG_VER, FLAG_FIX, FLAG_DIS, \
-        FLAG_POL, FLAG_CON, FLAG_ANG, FLAG_PAR, FLAG_PER
-    FLAG_HOR = 0
-    FLAG_VER = 0
-    FLAG_FIX = 0
-    FLAG_DIS = 0
-    FLAG_POL = 0
-    FLAG_CON = 0
-    FLAG_ANG = 0
-    FLAG_PAR = 0
-    FLAG_PER = 0
-
-
 # Перерасчёт координат точек
 def update_primitives():
     global ULTRACOUNTER
 
-    if len(Constraints) != 0:
-        tmp = 2 * len(global_point_list)
-        for con in Constraints:
-            tmp += con.getLs()
-        deltas = [0] * tmp
+    if len(Constraints):
+        # Проходим по массиву ограничений, запоминанаем индексы задействованных точек и число множителей Лагранжа
+        constrained_points_indexes = []
+        lambdas_num = 0
+        for constraint in Constraints:
+            for point in constraint.Points:
+                point_global_index = global_point_list.index(point)
+                if point_global_index not in constrained_points_indexes:
+                    constrained_points_indexes.append(point_global_index)
+            lambdas_num += constraint.getLs()
+
+        if len(constrained_points_indexes) * 2 < lambdas_num:
+            print('Это уже перебор. Произошла переопределённость.')
+            return 1
+
+        deltas = [0] * (len(constrained_points_indexes) * 2 + lambdas_num)
 
         ULTRACOUNTER = 0
 
         # Итерации метода Ньютона
         while True:
-            matrix, f = assemble_slae(deltas)
+            matrix, f = assemble_slae(deltas, constrained_points_indexes, lambdas_num)
             new_deltas, flag = solve_slae(matrix, f)
+
             if flag:
                 message_box.set_val('Не могу пересчитать, отменяюсь')
-                # print("Не могу пересчитать, отменяюсь")
                 return 1
+
             if abs(max(new_deltas, key=abs)) < EPS:
-                for i in range(len(global_point_list)):
-                    global_point_list[i].aCoord[0] += deltas[i * 2]
-                    global_point_list[i].aCoord[1] += deltas[i * 2 + 1]
+                for i in range(len(constrained_points_indexes)):
+                    global_index = constrained_points_indexes[i]
+                    global_point_list[global_index].aCoord[0] += deltas[i * 2]
+                    global_point_list[global_index].aCoord[1] += deltas[i * 2 + 1]
                 break
 
             for i in range(len(deltas)):
@@ -86,69 +84,57 @@ def update_primitives():
 
 
 #  Ансамблирование
-def assemble_slae(deltas):
-    d_len = len(deltas)
-    matrix = [0] * d_len
-    for i in range(d_len):
-        matrix[i] = [0] * d_len
-    f = [0] * d_len
+def assemble_slae(deltas, global_indexes, lambda_num):
+    # Пямять под матрицу и правую часть
+    deltas_len = len(deltas)
+    matrix = [0] * deltas_len
+    for i in range(deltas_len):
+        matrix[i] = [0] * deltas_len
+    f = [0] * deltas_len
 
-    # Заносим координаты всех точек в список
+    # Заносим координаты всех участвующих точек в список
     delta_coordinates = []
-    total_coordinates = 2 * len(global_point_list)
+    total_coordinates = 2 * len(global_indexes)
     for i in range(0, total_coordinates, 2):
         delta_coordinates.append([deltas[i], deltas[i + 1]])
 
     # Формируем список лямбд для всех имеющихся ограничений
     delta_lamdas = []
-    for con in Constraints:
-        tmp = [0] * con.getLs()
-        for i in range(con.getLs()):
-            tmp[i] = deltas[total_coordinates]
+    for constraint in Constraints:
+        constraint_lambdas = [0] * constraint.getLs()  # Тут может быть проблема с фиксированной точкой
+        for i in range(constraint.getLs()):
+            constraint_lambdas[i] = deltas[total_coordinates]
             total_coordinates += 1
-        delta_lamdas.append(tmp)
+        delta_lamdas.append(constraint_lambdas)
 
     lamda_shift = 0
-    for con in Constraints:
-        if con.Ls != 0:
+    for constraint in Constraints:
+        if constraint.Ls != 0:
             D = []  # Дельты для перерасчёта локальных матриц
-            L = delta_lamdas[Constraints.index(con)]
+            L = delta_lamdas[Constraints.index(constraint)]
             T = []  # Индекс в глобальной матрице
 
             # Получение дельт для точек, задействованных в данном ограничении
-            for cp in con.Points:
-                point_index = global_point_list.index(cp)
+            for constraint_point in constraint.Points:
+                global_point_index = global_point_list.index(constraint_point)
+                point_index = global_indexes.index(global_point_index)
                 D.append(delta_coordinates[point_index])
                 T.append(2 * point_index)
                 T.append(2 * point_index + 1)
             # Получение дельт лямбда для данного ограничения и сдвига в индексах
             # глобального вектора дельт для них
             for i in range(len(L)):
-                T.append(2 * len(global_point_list) + lamda_shift + i)
+                T.append(2 * len(global_indexes) + lamda_shift + i)
             lamda_shift += len(L)
 
             # Получение локальной матрицы для данного ограничения
-            local_matrix, local_f = con.LocalCon(D, L)
+            local_matrix, local_f = constraint.LocalCon(D, L)
 
             # Ансамблирование
             for i in range(len(T)):
                 for j in range(len(T)):
                     matrix[T[i]][T[j]] += local_matrix[i][j]
                 f[T[i]] += local_f[i]
-
-    # Точки без ограничений
-    for i in range(2 * len(global_point_list)):
-        if matrix[i][i] == 0 and f[i] == 0:
-            matrix[i][i] = 1
-
-    # Учёт фиксированных точек
-    for i in range(len(global_point_list)):
-        if global_point_list[i] in Fixedlist:
-            for j in range(len(deltas)):
-                matrix[i*2][j] = matrix[j][i*2] = 0
-                matrix[i*2 + 1][j] = matrix[j][i*2 + 1] = 0
-            matrix[i*2][i*2] = matrix[i*2 + 1][i*2 + 1] = 1
-            f[i*2] = f[i*2 + 1] = 0
 
     return matrix, f
 
@@ -207,9 +193,8 @@ def solve_slae(matrix, f):
 
 # Отрисовка эскиза
 def update_draft():
-    global global_point_list, global_line_list, cPointlist
+    global global_point_list, global_line_list
 
-    cPointlist = []
     cPointlist = global_point_list.copy()
     if update_primitives():
         global_point_list = cPointlist.copy()
@@ -438,7 +423,7 @@ def on_pick(event):
             if FLAG_FIX == 1:
                 if pointInd != -1:
                     tmp = [global_point_list[pointInd]]
-                    tmp2 = constraints.fix.Fixed(tmp, Fixedlist)
+                    tmp2 = constraints.fix.Fixed(tmp)
                     Constraints.append(tmp2)
                     update_draft()
                     message_box.set_val('Точка зафиксирована')
@@ -448,7 +433,7 @@ def on_pick(event):
                     for point in global_point_list:
                         if point.v_return() == [round(points[0][0], 10), round(points[0][1], 10)]:
                             tmp = [point]
-                            tmp2 = constraints.fix.Fixed(tmp, Fixedlist)
+                            tmp2 = constraints.fix.Fixed(tmp)
                             Constraints.append(tmp2)
                             update_draft()
                             message_box.set_val('Точка зафиксирована')

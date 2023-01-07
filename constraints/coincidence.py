@@ -34,7 +34,7 @@ class Coincidence(Constraint):
         F[2] = -(deltas[1][0] + lambdas[0])
         F[3] = -(deltas[1][1] + lambdas[1])
 
-        F[4] = -(self.Points[1].aCoord[0] + deltas[1][0] - self.Points[0].aCoord[0] - deltas[0][0])
-        F[5] = -(self.Points[1].aCoord[1] + deltas[1][1] - self.Points[0].aCoord[1] - deltas[0][1])
+        F[4] = -(- self.Points[0].aCoord[0] - deltas[0][0] + self.Points[1].aCoord[0] + deltas[1][0])
+        F[5] = -(- self.Points[0].aCoord[1] - deltas[0][1] + self.Points[1].aCoord[1] + deltas[1][1])
 
         return matrix, F

@@ -31,6 +31,6 @@ class Horizontal(Constraint):
         F[2] = -(D[1][0])
         F[3] = -(D[1][1] + L[0])
 
-        F[4] = -(self.Points[1].aCoord[1]+D[1][1] - self.Points[0].aCoord[1] - D[0][1])
+        F[4] = -(self.Points[1].aCoord[1] + D[1][1] - self.Points[0].aCoord[1] - D[0][1])
 
         return matrix, F

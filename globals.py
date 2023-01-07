@@ -21,14 +21,27 @@ FLAG_PAR = 0  # Задание параллельности
 FLAG_PER = 0  # Задание перпендикулярности
 
 
+# Сброс флагов режима
+def reset_flags():
+    global FLAG_HOR, FLAG_VER, FLAG_FIX, FLAG_DIS, \
+        FLAG_POL, FLAG_CON, FLAG_ANG, FLAG_PAR, FLAG_PER
+    FLAG_HOR = 0
+    FLAG_VER = 0
+    FLAG_FIX = 0
+    FLAG_DIS = 0
+    FLAG_POL = 0
+    FLAG_CON = 0
+    FLAG_ANG = 0
+    FLAG_PAR = 0
+    FLAG_PER = 0
+
+
 # Флаги режимов создания/удаления примитивов
 FLAG_DEL = 0  # флаг для удаления точки
 FLAG_CRE = 0  # флаг создания 0 - точка, 1 - прямая, 2 - прямая между существующими точками
 
 PointCount = 0
 PointInd = 0
-
-cPointlist = []
 
 global_point_list = []  # список точек
 global_line_list = []  # список отрезков
