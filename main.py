@@ -62,9 +62,10 @@ def update_primitives():
         # Итерации метода Ньютона
         curr_iteration = 0
         while True:
-            if curr_iteration > 10:
-                print('Решатель, который не смог')
-                exit(1)
+            if curr_iteration > 100:
+                print('Недопустимые ограничения')
+                Constraints.pop(-1)
+                return 1
 
             matrix, f = assemble_slae(deltas, constrained_points_indexes)
 
