@@ -41,8 +41,6 @@ def check_time(curtime, mode):
 
 # Перерасчёт координат точек
 def update_primitives():
-    global ULTRACOUNTER
-
     if len(Constraints):
         # Проходим по массиву ограничений, запоминанаем индексы задействованных точек и число множителей Лагранжа
         constrained_points_indexes = []
@@ -63,19 +61,16 @@ def update_primitives():
 
         deltas = [0] * (len(constrained_points_indexes) * 2 + lambdas_num)
 
-        ULTRACOUNTER = 0
-
         # Итерации метода Ньютона
+        curr_iteration = 0
         while True:
-            matrix, f = assemble_slae(deltas, constrained_points_indexes, lambdas_num)
+            if curr_iteration > 10:
+                print('Решатель, который не смог')
+                exit(1)
 
-            print(matrix)
+            matrix, f = assemble_slae(deltas, constrained_points_indexes)
 
-            new_deltas, flag = solve_slae(matrix, f)
-
-            if flag:
-                message_box.set_val('Не могу пересчитать, отменяюсь')
-                return 1
+            new_deltas = solve_slae(matrix, f)
 
             if abs(max(new_deltas, key=abs)) < EPS:
                 for i in range(len(constrained_points_indexes)):
@@ -86,11 +81,13 @@ def update_primitives():
 
             for i in range(len(deltas)):
                 deltas[i] += new_deltas[i]
+
+            curr_iteration += 1
     return 0
 
 
 #  Ансамблирование
-def assemble_slae(deltas, global_indexes, lambda_num):
+def assemble_slae(deltas, global_indexes):
     # Пямять под матрицу и правую часть
     deltas_len = len(deltas)
     matrix = [0] * deltas_len
@@ -144,26 +141,24 @@ def assemble_slae(deltas, global_indexes, lambda_num):
 
 # Решение СЛАУ методом Гаусса
 def solve_slae(matrix, f):
-    global ULTRACOUNTER
+    slae_dim = len(f)
 
-    alen = len(f)
-
-    for h in range(alen - 1):
-        for j in range(h + 1, alen):
+    for h in range(slae_dim - 1):
+        for j in range(h + 1, slae_dim):
             m = matrix[j][h] / matrix[h][h]
-            for i in range(h, alen):
+            for i in range(h, slae_dim):
                 matrix[j][i] -= m * matrix[h][i]
             f[j] -= m * f[h]
-    result = [0] * alen
+    result = [0] * slae_dim
 
     # Обратный ход
-    for h in range(alen - 1, -1, -1):
+    for h in range(slae_dim - 1, -1, -1):
         m = 0
-        for i in range(h + 1, alen):
+        for i in range(h + 1, slae_dim):
             m += matrix[h][i] * result[i]
         result[h] = (f[h] - m) / matrix[h][h]
 
-    return result, 0
+    return result
 
 
 # Отрисовка эскиза
