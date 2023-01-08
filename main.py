@@ -53,7 +53,8 @@ def update_primitives():
             lambdas_num += constraint.getLs()
 
         if len(constrained_points_indexes) * 2 < lambdas_num:
-            print('Переопределённость. Удалите последнее ограничение')
+            print('Переопределённость.')
+            Constraints.pop(-1)
             return 1
 
         deltas = [0] * (len(constrained_points_indexes) * 2 + lambdas_num)
