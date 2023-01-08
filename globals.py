@@ -6,8 +6,6 @@ PICK_LAST_TIME = datetime.now()
 
 tmp = []
 
-ULTRACOUNTER = 0
-
 
 # Флаги текущего режима
 FLAG_HOR = 0  # Задание горизонтальности
@@ -52,6 +50,5 @@ YAXES = [0, 10]  # размер рабочего поля по У
 FLAG_DELCON = 0
 
 Constraints = []
-Fixedlist = []
 
 EPS = 0.001

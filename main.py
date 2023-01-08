@@ -45,10 +45,7 @@ def update_primitives():
         # Проходим по массиву ограничений, запоминанаем индексы задействованных точек и число множителей Лагранжа
         constrained_points_indexes = []
         lambdas_num = 0
-        #fixed_num = 0
         for constraint in Constraints:
-            # if constraint.Name == "Фиксация":
-            #     fixed_num += 1
             for point in constraint.Points:
                 point_global_index = global_point_list.index(point)
                 if point_global_index not in constrained_points_indexes:
@@ -112,7 +109,6 @@ def assemble_slae(deltas, global_indexes):
 
     lamda_shift = 0
     for constraint in Constraints:
-        #if constraint.Ls != 0:
         D = []  # Дельты для перерасчёта локальных матриц
         L = delta_lamdas[Constraints.index(constraint)]
         T = []  # Индекс в глобальной матрице
@@ -550,12 +546,12 @@ def add_line(p1, p2):
 # Удаление примитивов
 def remove_point_in_constraints(point):
     while True:
-        ttt = 0
+        flag = 0
         for con in Constraints:
             if point in con.Points:
-                ttt = 1
+                flag = 1
                 Constraints.remove(con)
-        if ttt == 0:
+        if flag == 0:
             break
 
     global_point_list.remove(point)
