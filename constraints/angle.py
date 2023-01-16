@@ -13,7 +13,7 @@ class Angle(Constraint):
         self.u = math.radians(angle)
 
     def get_description(self):
-        return "Угол между отрезками {" + str(self.Points[0].v_return()) + "; " + str(self.Points[1].v_return()) \
+        return "Угол " + str(round(math.degrees(self.u), 5)) + " между прямыми {" + str(self.Points[0].v_return()) + "; " + str(self.Points[1].v_return()) \
                + "} и {" + str(self.Points[2].v_return()) + "; " + str(self.Points[3].v_return()) + "}"
 
     def LocalCon(self, Del, lambdas):

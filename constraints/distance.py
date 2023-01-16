@@ -11,7 +11,7 @@ class Distance(Constraint):
         self.Name = "Расстояние"
 
     def get_description(self):
-        return "Расстояние между точками " + str(self.Points[0].v_return()) + " и " + str(self.Points[1].v_return())
+        return "Расстояние " + str(round(self.d, 5)) + " между точками " + str(self.Points[0].v_return()) + " и " + str(self.Points[1].v_return())
 
     def LocalCon(self, deltas, lambdas):
         k = 5

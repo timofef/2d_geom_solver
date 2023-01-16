@@ -3,10 +3,6 @@ from datetime import datetime
 CLICK_LAST_TIME = datetime.now()
 PICK_LAST_TIME = datetime.now()
 
-
-tmp = []
-
-
 # Флаги текущего режима
 FLAG_HOR = 0  # Задание горизонтальности
 FLAG_VER = 0  # Задание вертикальности
@@ -52,3 +48,6 @@ FLAG_DELCON = 0
 Constraints = []
 
 EPS = 0.001
+
+
+tmp = []
